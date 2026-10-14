@@ -1,0 +1,15 @@
+
+## Statistical Variables and Formulas
+xx
+
+## Recalculating the Statistics
+xx
+
+### Calculations for Each Recording
+xx
+
+### Summary Results Table
+xx
+
+## Validation Against MouseReMoCo
+xx

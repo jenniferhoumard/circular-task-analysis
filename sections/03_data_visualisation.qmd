@@ -1,0 +1,12 @@
+
+## Reproducing the Assignment Figures
+xx
+
+### Mouse Position and Recording Intervals
+xx
+
+### Mouse Trajectory and Circular Target
+xx
+
+## Visualising Movement Accuracy
+xx

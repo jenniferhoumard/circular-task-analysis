@@ -1,0 +1,71 @@
+
+---
+title: "Circular Task Analysis"
+subtitle: "Mouse Movement Analysis Using Python"
+author:
+  - "Jennifer Houmard"
+  - "Alexis Lagarde"
+  - "Sarah Durand"
+date: "2026-10-14"
+
+format:
+  pdf:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    geometry:
+      - margin=2.5cm
+    fontsize: 11pt
+    include-in-header:
+      text: |
+        \usepackage{fvextra}
+        \DefineVerbatimEnvironment{Highlighting}{Verbatim}{
+          breaklines,
+          breakanywhere,
+          commandchars=\\\{\}
+        }
+
+jupyter: python3
+
+execute:
+  echo: true
+  warning: false
+---
+
+```{python}
+# Import libraries used throughout the assignment
+
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle, Circle
+import os 
+```
+
+# Introduction
+
+{{< include sections/01_introduction.qmd >}}
+
+# Data Exploration
+
+{{< include sections/02_data_exploration.qmd >}}
+
+# Data Visualisation
+
+{{< include sections/03_data_visualisation.qmd >}}
+
+# Statistical Analysis
+
+{{< include sections/04_statistical_analysis.qmd >}}
+
+# New Experiment with MouseReMoCo
+
+{{< include sections/05_new_experiment.qmd >}}
+
+# Discussion and Conclusion
+
+{{< include sections/06_discussion.qmd >}}
+
+# References
+
+{{< include sections/07_references.qmd >}}
+

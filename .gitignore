@@ -218,3 +218,12 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Quarto generated files
+.quarto/
+_freeze/
+*_files/
+
+# macOS
+.DS_Store
+__MACOSX/

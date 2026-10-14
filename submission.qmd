@@ -1,0 +1,61 @@
+
+---
+title: "Circular Task Analysis"
+subtitle: "Group Submission Summary"
+author:
+  - "Jennifer Houmard"
+  - "Alexis Lagarde"
+  - "Sarah Durand"
+
+format:
+  pdf:
+    toc: false
+    number-sections: false
+    geometry:
+      - margin=1.8cm
+    fontsize: 10pt
+
+---
+
+## 1. Public Repository
+
+**GitHub repository:**  
+https://github.com/jenniferhoumard/circular-task-analysis
+
+## 2. Group Workflow
+
+### Distribution of Tasks
+
+| Member | Assigned Quarto Documents |
+|---|---|
+| Jennifer Houmard |xxxxxxxx |
+| Alexis Lagarde | xxxxxxxxx |
+| Sarah Durand | xxxxxxxxxxx |
+
+### Quarto Organisation
+
+The project contains one master Quarto document (master.qmd) which combines seven individual .qmd sections. Each member workson their assigned sections before the complete report is rendered.
+
+### Git Branching and Review Strategy
+
+Each member develops their work in a separate Git branch which corresponds to one of the sub-seven quarto documents and submits a pull request. Another member reviews the changes before the project manager merges them into `main`.
+
+## 3. Three Most Critical Problems and Solutions
+
+**Problem 1 — [Title]**
+
+Problem: 
+
+Solution: 
+
+**Problem 2 — [Title]**
+
+Problem: 
+
+Solution: 
+
+**Problem 3 — [Title]**
+
+Problem: 
+
+Solution: 

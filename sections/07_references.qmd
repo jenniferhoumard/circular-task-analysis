@@ -1,0 +1,4 @@
+
+- Fauviaux, T., Muller, C., Faity, G., et al. (2021). *Can a circular steering task quantify sensorimotor integration in persons with stroke?* https://hal.science/hal-03834500
+
+- Mottet, D. *MouseReMoCo.* https://github.com/DenisMot/MouseReMoCo

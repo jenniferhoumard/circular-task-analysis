@@ -1,0 +1,21 @@
+
+## Importing the Provided Data
+xx
+
+### Mouse Position Data
+xx
+
+### Marker Data
+xx
+
+## Understanding the Data Structure
+xx
+
+### Experimental Parameters and Recorded Variables
+xx
+
+### Timestamps, Sampling and Recording Intervals
+xx
+
+## Data Quality Checks
+xx
