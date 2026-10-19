@@ -8,7 +8,7 @@ Human movement depends on two systems working together:
 
 These systems continuously communicate. The sensory system provides information about what is happening, and the motor system uses this information to plan, perform, and adjust movements. This process is called sensorimotor integration.
 
-During movement, the nervous system uses this sensory information to check whether the movement matches what was intended. If there is a difference, it adjusts the movement to reduce the error. The new movement then provides more sensory information, allowing further adjustments. This is known as a feedback loop, which is essential for accurate and coordinated movement.
+During movement, the nervous system uses this sensory information to check whether the movement matches what was intended. If there is a difference, it adjusts the movement to reduce the error. The new movement then provides more sensory information, allowing further adjustments. This is known as a feedback control loop, which is essential for accurate and coordinated movement.
 
 Researchers can study sensorimotor integration by observing how people perform tasks that require precise movement control.
 
@@ -20,9 +20,9 @@ An example is the circular steering task, where a person moves a cursor around a
 
 A circular steering task is a computer-based movement test used to study how people control their movements using sensory information.
 
-The participant uses a computer mouse to move a cursor around a circular track displayed on the screen. The aim is to complete as many laps as possible while keeping the cursor within the track's boundaries as accurately and quickly as possible. The task can be made more challenging by changing the track's size, shape, or speed.
+The participant uses a computer mouse to move a cursor around a circular track displayed on the screen. The aim is to complete as many laps as possible while keeping the cursor within the track's boundaries as accurately and quickly as possible. 
 
-The circular track is formed by two circles sharing the same centre: an inner and an outer boundary. The space between these circles defines the target area where the cursor should remain. The width of this area determines how much room the participant has to move without leaving the track. A narrower track generally makes the task more difficult because it requires greater movement accuracy.
+The circular track is formed by two circles sharing the same centre: an inner and an outer boundary. The space between these circles defines the target area where the cursor should remain. The width of this area determines how much room the participant has to move without leaving the track. The difficulty can be adjusted by changing the size of the circular track or the width of the target area. A narrower track requires more accurate movements.
 
 ![Schematic representation of the circular steering task, showing the track boundaries, target path, cursor trajectory, and an example of radial error.](figures/circular_task_diagram.png){#fig-circular-task width=85%}
 
@@ -40,6 +40,31 @@ To study movement performance, researchers need to record how the cursor moves d
 
 ## MouseReMoCo: Software and Data Aquisition
 
+The software displays the movement task on the screen and records how the participant moves the cursor. 
+
+During the circular steering task, MouseReMoCo records the cursor's position at different moments in time. Each recorded observation contains:
+
+- `Timestamp`: When the cursor's position was recorded.
+
+- `X coordinate`: The horizontal position of the cursor on the screen.
+
+- `Y coordinate`: The vertical position of the cursor on the screen.
+
+- `Target status`: Whether the cursor is inside or outside the target area.
+
+By combining these observations, researchers can reconstruct the path followed by the cursor and examine how its movement changes over time.
+
+The software also records experimental markers, which identify important events during the task, such as the beginning of a recording and the transition to a pause. These markers allow researchers to identify which mouse movements belong to each recording.
+
+MouseReMoCo saves this information in two CSV files:
+
+- `Raw movement file` (001MoDe_R1.csv): Contains the recorded mouse positions, timestamps, and target status.
+
+- `Marker file` (001MoDe_R1.marker.csv): Contains information about the experimental settings, recording events, and performance statistics calculated by the software.
+
+The raw movement file shows what the cursor actually did, while the marker file provides the information needed to identify the recordings and interpret the results.
+
+The structure of the provided CSV files and the methods used to import and examine their contents are described in Section 02 — Data Exploration.
 
 ### Fauviaux et al. (2021)
 
@@ -57,7 +82,7 @@ The study included 18 participants, divided into two groups:
 
 Each participant performed six trials of the circular steering task, with three trials using each hand. This allowed the researchers to compare performance between hands and between the two groups.
 
-Performance was evaluated using the Index of Effective Performance (IPe), which combines movement speed and accuracy into a single measure. It considers how difficult the movement was to perform accurately and how much time was needed. A higher IPe indicates better performance, meaning the participant was able to complete a more demanding movement in less time.
+Performance was evaluated using the Index of Effective Performance (IPe), which combines movement speed and accuracy into a single measure. It considers how difficult the movement was to perform accurately and how much time was needed.A higher IPe generally indicates more effective movement performance, considering both movement accuracy and the time required.
 
 The researchers found that:
 
@@ -68,6 +93,4 @@ The researchers found that:
 These findings suggest that the circular steering task can detect differences in movement control associated with neurological impairment and hand dominance. However, because the study involved a small number of participants, further research is needed to determine how reliably the task can be used in clinical assessments.
 
 ## Objectives of the Assignment
-
-xx
 
