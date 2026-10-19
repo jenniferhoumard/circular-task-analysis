@@ -1,9 +1,26 @@
 
-## Scientific Background
-xx
+## Sensorimotor Integration
+
+Human movement depends on two systems working together:
+
+- `Sensory system`: Collects information about our body and surroundings through our senses. For example, our eyes tell us where an object is, while receptors in our muscles and joints help us sense the position of our limbs.
+
+- `Motor system`: Controls movement by sending signals from the nervous system to our muscles, allowing us to perform actions such as reaching, walking, or moving a computer mouse.
+
+These systems continuously communicate. The sensory system provides information about what is happening, and the motor system uses this information to plan, perform, and adjust movements. This process is called sensorimotor integration.
+
+During movement, the nervous system uses this sensory information to check whether the movement matches what was intended. If there is a difference, it adjusts the movement to reduce the error. The new movement then provides more sensory information, allowing further adjustments. This is known as a feedback loop, which is essential for accurate and coordinated movement.
+
+Researchers can study sensorimotor integration by observing how people perform tasks that require precise movement control.
+
+One way to do this is through computer-based tasks, where a person moves a cursor using a mouse. By recording the cursor's position over time, researchers can measure movement speed, accuracy, and errors.
+
+An example is the circular steering task, where a person moves a cursor around a circular track while trying to stay within its boundaries. 
 
 ### Sensorimotor Integration and Circular Steering Task
-xx
+
+
+
 
 ### Fauviaux et al. (2021) Study
 xx
