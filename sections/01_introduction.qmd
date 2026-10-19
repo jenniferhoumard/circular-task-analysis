@@ -24,7 +24,7 @@ The participant uses a computer mouse to move a cursor around a circular track d
 
 The circular track is formed by two circles sharing the same centre: an inner and an outer boundary. The space between these circles defines the target area where the cursor should remain. The width of this area determines how much room the participant has to move without leaving the track. A narrower track generally makes the task more difficult because it requires greater movement accuracy.
 
-[Schematic representation of the circular steering task, showing the track boundaries, target path, cursor trajectory, and an example of radial error.](figures/circular_task_diagram.png){#fig-circular-task width=85%}
+![Schematic representation of the circular steering task, showing the track boundaries, target path, cursor trajectory, and an example of radial error.](figures/circular_task_diagram.png){#fig-circular-task width=85%}
 
 Unlike a pointing task, where the goal is to reach a single target, a circular steering task requires continuous movement. The participant must constantly change the direction of the cursor to follow the circular path. This requires visuomotor control, which is the ability to use visual information to guide and adjust movements.
 
@@ -36,22 +36,38 @@ Therefore performance depends on two main factors:
 
 Moving faster may allow the participant to complete more laps, but it can also lead to more errors by making it harder to stay within the boundaries. While moving slower may improve accuracy, it can also reduce the number of laps completed. This trade-off between speed and accuracy is called the speed-accuracy trade-off.
 
-To record and analyse these movements, researchers can use MouseReMoCo (Mouse for Research on Motor Control), an open-source software program.
+To study movement performance, researchers need to record how the cursor moves during the task. This can be done using MouseReMoCo (Mouse for Research on Motor Control), an open-source software program described in the following section.
 
-MouseReMoCo records the position of the cursor at different moments during the task. This allows researchers to recreate the path followed by the cursor and calculate how many laps were completed, the duration of each lap, and how accurately the cursor stayed within the track.
+## MouseReMoCo: Software and Data Aquisition
 
-The software also calculates the Index of Effective Performance (IPe), which combines movement speed and accuracy into a single measure. It considers how difficult the movement was to perform accurately and how much time was needed. A higher IPe indicates better performance, meaning the participant was able to complete a more demanding movement in less time.
 
-Together, these measurements help researchers evaluate how effectively a person controls movement while following a circular path.
+### Fauviaux et al. (2021)
 
-### Fauviaux et al. (2021) Study
+The circular steering task has also been investigated as a way to assess movement control in people with neurological impairments.
 
-xx
+Fauviaux et al. (2021) investigated whether a circular steering task could be used to detect differences in sensorimotor performance, particularly in people who had experienced a stroke.
+
+A stroke occurs when blood flow to part of the brain is interrupted or when a blood vessel in the brain ruptures. This can damage areas involved in sensing and controlling movement, making it harder to perform accurate and coordinated movements. In some people, one side of the body becomes weaker or more difficult to control. This is known as the paretic side.
+
+The study included 18 participants, divided into two groups:
+
+- 9 healthy participants
+
+- 9 participants who had experienced a stroke
+
+Each participant performed six trials of the circular steering task, with three trials using each hand. This allowed the researchers to compare performance between hands and between the two groups.
+
+Performance was evaluated using the Index of Effective Performance (IPe), which combines movement speed and accuracy into a single measure. It considers how difficult the movement was to perform accurately and how much time was needed. A higher IPe indicates better performance, meaning the participant was able to complete a more demanding movement in less time.
+
+The researchers found that:
+
+- Participants with stroke performed significantly worse with their affected (paretic) hand than with their less-affected hand.
+
+- Healthy participants performed significantly worse with their non-dominant hand than with their dominant hand.
+
+These findings suggest that the circular steering task can detect differences in movement control associated with neurological impairment and hand dominance. However, because the study involved a small number of participants, further research is needed to determine how reliably the task can be used in clinical assessments.
 
 ## Objectives of the Assignment
 
 xx
 
-## MouseReMoCo: Task and Recording Procedure
-
-xx
