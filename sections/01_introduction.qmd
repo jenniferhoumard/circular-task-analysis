@@ -10,19 +10,17 @@ These systems continuously communicate. The sensory system provides information 
 
 During movement, the nervous system uses this sensory information to check whether the movement matches what was intended. If there is a difference, it adjusts the movement to reduce the error. The new movement then provides more sensory information, allowing further adjustments. This is known as a feedback control loop, which is essential for accurate and coordinated movement.
 
-Researchers can study sensorimotor integration by observing how people perform tasks that require precise movement control.
+Researchers can study sensorimotor integration by observing how people perform tasks that require precise movement control. One way to do this is through computer-based tasks, where a person moves a cursor using a mouse. By recording the cursor's position over time, researchers can measure movement speed, accuracy, and errors.
 
-One way to do this is through computer-based tasks, where a person moves a cursor using a mouse. By recording the cursor's position over time, researchers can measure movement speed, accuracy, and errors.
-
-An example is the circular steering task, where a person moves a cursor around a circular track while trying to stay within its boundaries.
+An example is the circular steering task, which is described in the following section. 
 
 ### Circular Steering Task
-
-A circular steering task is a computer-based movement test used to study how people control their movements using sensory information.
 
 The participant uses a computer mouse to move a cursor around a circular track displayed on the screen. The aim is to complete as many laps as possible while keeping the cursor within the track's boundaries as accurately and quickly as possible. 
 
 The circular track is formed by two circles sharing the same centre: an inner and an outer boundary. The space between these circles defines the target area where the cursor should remain. The width of this area determines how much room the participant has to move without leaving the track. The difficulty can be adjusted by changing the size of the circular track or the width of the target area. A narrower track requires more accurate movements.
+
+The circular track and its main components are illustrated in @fig-circular-task
 
 ![Schematic representation of the circular steering task, showing the track boundaries, target path, cursor trajectory, and an example of radial error.](figures/circular_task_diagram.png){#fig-circular-task width=85%}
 
@@ -32,17 +30,15 @@ Therefore performance depends on two main factors:
 
 - `Movement speed`: How fast the participant can move the cursor around the circle.
 
-- `Movement accuracy`: How well the participant can keep the cursor within the circle's boundaries.
+- `Movement accuracy`: How consistently the cursor stays within the circle's boundaries.
 
-Moving faster may allow the participant to complete more laps, but it can also lead to more errors by making it harder to stay within the boundaries. While moving slower may improve accuracy, it can also reduce the number of laps completed. This trade-off between speed and accuracy is called the speed-accuracy trade-off.
+Moving faster may allow the participant to complete more laps, but it can also lead to more errors by making it harder to stay within the boundaries. While moving slower may improve accuracy, it can also reduce the number of laps completed. This relationship between speed and accuracy is called the speed-accuracy trade-off.
 
 To study movement performance, researchers need to record how the cursor moves during the task. This can be done using MouseReMoCo (Mouse for Research on Motor Control), an open-source software program described in the following section.
 
 ## MouseReMoCo: Software and Data Aquisition
 
-The software displays the movement task on the screen and records how the participant moves the cursor. 
-
-During the circular steering task, MouseReMoCo records the cursor's position at different moments in time. Each recorded observation contains:
+MouseReMoCo displays the movement task on the screen and records how the participant moves the cursor. During the circular steering task, the software records the cursor's position at different moments in time. Each recorded observation contains:
 
 - `Timestamp`: When the cursor's position was recorded.
 
@@ -68,11 +64,11 @@ The structure of the provided CSV files and the methods used to import and exami
 
 ### Fauviaux et al. (2021)
 
-The circular steering task has also been investigated as a way to assess movement control in people with neurological impairments.
+The circular steering task has also been used to assess movement control in people with neurological impairments.
 
 Fauviaux et al. (2021) investigated whether a circular steering task could be used to detect differences in sensorimotor performance, particularly in people who had experienced a stroke.
 
-A stroke occurs when blood flow to part of the brain is interrupted or when a blood vessel in the brain ruptures. This can damage areas involved in sensing and controlling movement, making it harder to perform accurate and coordinated movements. In some people, one side of the body becomes weaker or more difficult to control. This is known as the paretic side.
+A stroke occurs when blood flow to part of the brain is interrupted or when a blood vessel in the brain ruptures. This can damage areas involved in sensing and controlling movement, making it harder to perform accurate and coordinated movements. In some people, one side of the body becomes weaker and or experience a partial loss of voluntary movement. This is known as the paretic side.
 
 The study included 18 participants, divided into two groups:
 
@@ -82,11 +78,13 @@ The study included 18 participants, divided into two groups:
 
 Each participant performed six trials of the circular steering task, with three trials using each hand. This allowed the researchers to compare performance between hands and between the two groups.
 
-Performance was evaluated using the Index of Effective Performance (IPe), which combines movement speed and accuracy into a single measure. It considers how difficult the movement was to perform accurately and how much time was needed.A higher IPe generally indicates more effective movement performance, considering both movement accuracy and the time required.
+Performance was evaluated using the Index of Effective Performance (IPe), expressed in bits per second. This combines movement speed and accuracy into a single measure. It considers how difficult the movement was to perform accurately and how much time was needed. A higher IPe generally indicates more effective movement performance, considering both movement accuracy and the time required.
+
+The researchers compared the IPe values between the two hands of each participant to investigate differences in movement control. 
 
 The researchers found that:
 
-- Participants with stroke performed significantly worse with their affected (paretic) hand than with their less-affected hand.
+- Participants with stroke performed significantly worse with their affected (paretic) hand than with their non-paretic hand.
 
 - Healthy participants performed significantly worse with their non-dominant hand than with their dominant hand.
 
@@ -96,7 +94,9 @@ These findings suggest that the circular steering task can detect differences in
 
 The main objective of this assignment is to understand, reproduce, and validate the analysis of mouse movements recorded during a circular steering task using Python.
 
-Using the data provided by MouseReMoCo, the project focuses on three main objectives:
+The project usese two files generated by MouseReMoCo: the raw movement data (001MoDe_R1.csv) and the corresponding marker file (001MoDe_R1.marker.csv). These allow us to independently calculate movement performance measures and compare our results with those produced by the software.
+
+The assignment focuses on three main objectives:
 
 - **Data visualisation**: Import the provided recordings and reproduce the reference graphs using NumPy and Matplotlib. This allows us to visualise the cursor's trajectory and understand how the movement changes over time.
 
