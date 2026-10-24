@@ -22,7 +22,27 @@ for file in [data_file, marker_file]:
 ```
 
 ### Mouse Position Data
-xx
+### Mouse Position Data
+
+The first line of the raw movement file contains all the experimental parameters of the task, written as `name value` pairs separated by semicolons (e.g. `screenWidth 1104;screenHeight 661;...`). We read this line and store the parameters in a dictionary. Numerical values are converted to `float`, while the other values (colours, software name, version…) are kept as text.
+
+```{python}
+# Read only the first line of the raw movement file (the parameter line)
+with open(data_file) as f:
+    first_line = f.readline().strip()
+
+# Split the line into "name value" pairs and store them in a dictionary
+params = {}
+for item in first_line.split(";"):
+    name, value = item.split(" ", 1)
+    try:
+        value = float(value)      # numerical parameter
+    except ValueError:
+        pass                      # non-numerical parameter: kept as text
+    params[name] = value
+
+print(params)
+```
 
 ### Marker Data
 xx
