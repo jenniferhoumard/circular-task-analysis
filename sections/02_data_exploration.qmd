@@ -1,3 +1,9 @@
+# TEMPORARY - for testing only, remove before the pull request
+```{python}
+import numpy as np
+import matplotlib.pyplot as plt
+import os
+```
 
 ## Importing the Provided Data
 
@@ -22,7 +28,6 @@ for file in [data_file, marker_file]:
 ```
 
 ### Mouse Position Data
-### Mouse Position Data
 
 The first line of the raw movement file contains all the experimental parameters of the task, written as `name value` pairs separated by semicolons (e.g. `screenWidth 1104;screenHeight 661;...`). We read this line and store the parameters in a dictionary. Numerical values are converted to `float`, while the other values (colours, software name, version…) are kept as text.
 
@@ -43,6 +48,33 @@ for item in first_line.split(";"):
 
 print(params)
 ```
+
+After the parameter line, the date and an empty line, the fourth line gives the column names (`timestamp,mouseX,mouseY,mouseInTarget`) and the samples start on the fifth line. All values are integers separated by commas, so the data can be loaded with `np.loadtxt` by skipping the first four lines.
+
+The file also contains a few lines equal to `0,0,0,0`, written by MouseReMoCo at the end of each record. They are not real samples, so we remove them before extracting the variables.
+
+```{python}
+# Load the numerical part of the file (skip the 4 header lines)
+data = np.loadtxt(data_file, delimiter=",", skiprows=4, dtype=np.int64)
+
+# Remove the separator lines "0,0,0,0" (timestamp equal to 0)
+is_separator = data[:, 0] == 0
+print("Separator lines removed:", is_separator.sum())
+data = data[~is_separator]
+
+# Extract the columns
+time_ms = data[:, 0]     # Unix timestamp (ms)
+mouse_x = data[:, 1]     # cursor x position on screen (pixel)
+mouse_y = data[:, 2]     # cursor y position on screen (pixel)
+in_target = data[:, 3]   # 1 = inside the target, 0 = outside
+
+# Time in seconds since the first sample
+time_s = (time_ms - time_ms[0]) / 1000
+
+print("Number of samples:", len(time_ms))
+print(f"Session duration: {time_s[-1]:.2f} s")
+```
+
 
 ### Marker Data
 xx
