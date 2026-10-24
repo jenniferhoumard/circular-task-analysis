@@ -130,13 +130,43 @@ print(marker_results)
 ```
 
 ## Understanding the Data Structure
-xx
+
+Before visualising and analysing the movement, we need to understand what each parameter and each recorded variable means, how time is encoded, and how the samples are distributed between the records.
 
 ### Experimental Parameters and Recorded Variables
-xx
 
-### Timestamps, Sampling and Recording Intervals
-xx
+The most important parameters stored in `params` are:
+
+- `screenWidth`, `screenHeight`: size of the drawing area (pixels).
+- `centerX`, `centerY`: position of the centre of the circular track, in the same screen coordinates as the mouse position.
+- `internalRadius` (170 px) and `externalRadius` (250 px): radii of the inner and outer boundaries of the track.
+- `cursorRadius` (16 px) and `borderRadius` (1 px): radius of the cursor and thickness of the border lines.
+- `taskRadius` (209.5 px) and `taskTolerance` (47 px): the radius of the path the cursor centre should follow, and the width available for the cursor centre. The cursor is only fully inside the track when its centre is at least one cursor radius away from each boundary: from 170 + 16 = 186 px to 250 − 16 − 1 = 233 px. The width of this band is 233 − 186 = 47 px (`taskTolerance`) and its middle is 209.5 px (`taskRadius`).
+- `indexOfDifficulty` (≈ 28.0 bits): the difficulty of one lap, equal to the length of the path divided by its width, 2π × 209.5 / 47.
+- `cycleMaxNumber` (6) and `cycleDuration` (20 s): number of planned records and duration of each record (and of each pause).
+
+The raw movement file records four variables for each sample:
+
+- `timestamp`: time of the sample, in milliseconds since 1 January 1970 (Unix time);
+- `mouseX`, `mouseY`: cursor position in pixels, in screen coordinates. The origin is at the top-left corner of the drawing area, x increases to the right and **y increases downwards**;
+- `mouseInTarget`: 1 when the cursor is inside the track, 0 otherwise.
+
+To analyse the movement around the circle, we express the cursor position relative to the centre of the track. We keep the screen orientation (y pointing downwards), so the y-axis has to be inverted when plotting to obtain the same view as on the screen.
+
+```{python}
+# Cursor position relative to the centre of the track (pixels, y pointing downwards)
+x = mouse_x - params["centerX"]
+y = mouse_y - params["centerY"]
+
+# Check: distance to the centre of the samples flagged as "inside the target"
+r = np.sqrt(x**2 + y**2)
+print(f"Radius when inside the target: {r[in_target == 1].min():.1f} to {r[in_target == 1].max():.1f} px")
+```
+
+The samples flagged as inside the target are all between 186 and 233 px from the centre, which confirms both the centring of the coordinates and our interpretation of `taskRadius` and `taskTolerance`.
+
+
+
 
 ## Data Quality Checks
 xx
