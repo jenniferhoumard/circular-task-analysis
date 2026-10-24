@@ -75,9 +75,8 @@ print("Number of samples:", len(time_ms))
 print(f"Session duration: {time_s[-1]:.2f} s")
 ```
 
-
 ### Marker Data
-xx
+
 
 ## Understanding the Data Structure
 xx
