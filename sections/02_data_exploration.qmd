@@ -165,8 +165,31 @@ print(f"Radius when inside the target: {r[in_target == 1].min():.1f} to {r[in_ta
 
 The samples flagged as inside the target are all between 186 and 233 px from the centre, which confirms both the centring of the coordinates and our interpretation of `taskRadius` and `taskTolerance`.
 
+### Timestamps, Sampling and Recording Intervals
 
+The session lasted about 3 minutes, but the cursor was only recorded during the records: the raw file does not contain the pauses. To know which samples belong to which record, we use the start (`DoRecord`) and end (`DoPause`) timestamps read in the marker file: a sample belongs to record *i* if its timestamp lies between the start and the end of that record.
 
+For each record, we then compute the number of samples, the duration (time between the first and the last sample) and the mean sampling frequency (number of intervals divided by the duration).
+
+```{python}
+record_idx = []
+record_fs_hz = []
+
+for i in range(n_records):
+    # Indices of the samples recorded between the start and the end of record i
+    idx = np.where((time_ms >= record_start_ms[i]) & (time_ms <= record_end_ms[i]))[0]
+    record_idx.append(idx)
+
+    # Duration and mean sampling frequency of the record
+    duration_s = (time_ms[idx[-1]] - time_ms[idx[0]]) / 1000
+    fs_hz = (len(idx) - 1) / duration_s
+    record_fs_hz.append(fs_hz)
+
+    print(f"record {i}: {len(idx)} samples in {duration_s:.2f} s ({fs_hz:.2f} Hz)")
+
+record_fs_hz = np.array(record_fs_hz)
+```
+
+The results are identical to the ones given in the assignment. The sampling frequency is close to 200 Hz but not exactly constant (between 197 and 200 Hz depending on the record), which is discussed in the next section.
 
 ## Data Quality Checks
-xx
