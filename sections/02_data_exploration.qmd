@@ -1,6 +1,25 @@
 
 ## Importing the Provided Data
-xx
+
+MouseReMoCo produced two CSV files for this session, both stored in the `data/` folder:
+
+- the **raw movement file**, which contains the experimental parameters (first line), the date of the session, and then one line per sample with the timestamp, the cursor position and whether the cursor is inside the target;
+- the **marker file**, which contains the same parameter line, the events of the session (start of each record and of each pause) and the summary table computed by the software.
+
+Both files start with a non-tabular header, so they cannot be loaded directly as a single table: the header and the numerical data have to be read separately. We first define the paths to the two files and check that they exist.
+
+```{python}
+# If the working directory is the "sections" folder, move up to the project root
+if os.getcwd().endswith("sections"):
+    os.chdir("..")
+# Paths to the data files (relative to the project root, where master.qmd is rendered)
+data_file = "data/001MoDe_R1.csv"
+marker_file = "data/001MoDe_R1.marker.csv"
+
+# Check that both files are found before going further
+for file in [data_file, marker_file]:
+    print(file, "found:", os.path.exists(file))
+```
 
 ### Mouse Position Data
 xx
