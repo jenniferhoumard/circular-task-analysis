@@ -75,8 +75,59 @@ print("Number of samples:", len(time_ms))
 print(f"Session duration: {time_s[-1]:.2f} s")
 ```
 
+
 ### Marker Data
 
+The marker file has a mixed structure: the parameter line, the start date, a list of timestamped events, and finally the summary table computed by MouseReMoCo. Because of this mixed structure, it cannot be loaded with `np.loadtxt`, so we read it line by line and decide what to do with each line based on its content:
+
+- lines containing `DoCycleChange:DoRecord` give the **start** of each record;
+- lines containing `DoCycleChange:DoPause` give the **end** of each record;
+- the lines starting with `Var`, `Theory` and `Rec` form the summary table.
+
+The 6th record (`Rec006`) is empty, because the window was closed during the pause before it started. We therefore only keep the records that were actually recorded.
+
+```{python}
+# Read all the lines of the marker file
+with open(marker_file) as f:
+    marker_lines = f.readlines()
+
+record_start_ms = []
+record_end_ms = []
+marker_results = []
+
+for line in marker_lines:
+    # Events: the timestamp (ms) is the 2nd comma-separated field
+    if "DoCycleChange:DoRecord" in line:
+        record_start_ms.append(int(line.split(",")[1]))
+    elif "DoCycleChange:DoPause" in line:
+        record_end_ms.append(int(line.split(",")[1]))
+
+    # Summary table: first field = row name, next 8 fields = values
+    row = line.strip()
+    if row.startswith("Var"):
+        marker_names = [name.strip().replace("/", "_") for name in row.split(",")[1:9]]
+    elif row.startswith("Theory"):
+        # Some cells are empty in the Theory row: replace them with NaN
+        marker_theory = np.array([float(v) if v.strip() else np.nan
+                                  for v in row.split(",")[1:9]])
+    elif row.startswith("Rec"):
+        marker_results.append([float(v) for v in row.split(",")[1:9]])
+
+# Convert to numpy arrays
+record_start_ms = np.array(record_start_ms)
+record_end_ms = np.array(record_end_ms)
+n_records = len(record_start_ms)
+
+# Keep only the records that were actually recorded (Rec006 is empty)
+marker_results = np.array(marker_results)[:n_records]
+
+print("Number of records:", n_records)
+print("Variables:", marker_names)
+print("Theory:", marker_theory)
+print("Results (one row per record):")
+np.set_printoptions(suppress=True)
+print(marker_results)
+```
 
 ## Understanding the Data Structure
 xx
