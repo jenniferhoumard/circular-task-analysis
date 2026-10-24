@@ -193,3 +193,33 @@ record_fs_hz = np.array(record_fs_hz)
 The results are identical to the ones given in the assignment. The sampling frequency is close to 200 Hz but not exactly constant (between 197 and 200 Hz depending on the record), which is discussed in the next section.
 
 ## Data Quality Checks
+
+Before using the data, we checked several points that could bias the figures or the statistics.
+
+```{python}
+# 1. Samples that do not belong to any record
+n_in_records = sum(len(idx) for idx in record_idx)
+print("Samples outside the records:", len(time_ms) - n_in_records)
+print("Time of the first sample relative to the start of record 0:",
+      time_ms[0] - record_start_ms[0], "ms")
+print()
+
+# 2. Sampling regularity and time outside the target, for each record
+for i in range(n_records):
+    idx = record_idx[i]
+    dt_ms = np.diff(time_ms[idx])                       # time between consecutive samples
+    delay_s = (time_ms[idx[0]] - record_start_ms[i]) / 1000
+    outside_pct = 100 * np.mean(in_target[idx] == 0)
+    print(f"record {i}: first sample after {delay_s:.3f} s | "
+          f"intervals: min {dt_ms.min()} ms, median {np.median(dt_ms):.0f} ms, max {dt_ms.max()} ms, "
+          f"{np.sum(dt_ms == 0)} duplicated timestamps | "
+          f"outside target: {outside_pct:.1f} %")
+```
+
+These checks lead to the following observations:
+
+- **Separator lines.** MouseReMoCo writes a line `0,0,0,0` at the end of each record. These 5 lines are not real samples and were removed when importing the data (Section 2.1.1).
+- **Samples outside the records.** One sample was recorded 4 ms before the start of the first record. It does not belong to any record and is therefore ignored when the data are split into records.
+- **Missing record.** Six records were planned (`cycleMaxNumber` = 6), but the window was closed during the 5th pause, so only 5 records contain data. The empty `Rec006` line of the marker file was not kept.
+- **Irregular sampling.** The median interval between two samples is about 5 ms (≈ 200 Hz), but intervals range from 0 ms (two samples with the same timestamp) to more than 100 ms, and the first sample of a record can arrive up to 0.5 s after its start. This suggests that MouseReMoCo records a sample each time the mouse moves rather than at a fixed rate. As a consequence, time must always be taken from the timestamps rather than computed from a fixed sampling frequency.
+- **Approach phase.** At the beginning of each record, the cursor has to reach the track, so most of the samples outside the target occur during the first second of the record. This is particularly visible in record 0, which explains its much larger effective tolerance (`Te` = 91.79 px) in the marker table. This phase should be kept in mind when recomputing the statistics (Section 4).
