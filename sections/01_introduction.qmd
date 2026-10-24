@@ -1,15 +1,107 @@
+## Sensorimotor Integration
 
-## Scientific Background
-xx
+Human movement depends on two systems working together:
 
-### Sensorimotor Integration and Circular Steering Task
-xx
+- **Sensory system**: Collects information about our body and surroundings through our senses. For example, our eyes tell us where an object is, while receptors in our muscles and joints help us sense the position of our limbs.
 
-### Fauviaux et al. (2021) Study
-xx
+- **Motor system**: Controls movement by sending signals from the nervous system to our muscles, allowing us to perform actions such as reaching, walking, or moving a computer mouse.
+
+These systems continuously communicate. The sensory system provides information about what is happening, and the motor system uses this information to plan, perform, and adjust movements. This process is called sensorimotor integration.
+
+During movement, the nervous system uses this sensory information to check whether the movement matches what was intended. If there is a difference, it adjusts the movement to reduce the error. The new movement then provides more sensory information, allowing further adjustments. This is known as a feedback control loop, which is essential for accurate and coordinated movement.
+
+Researchers can study sensorimotor integration by observing how people perform tasks that require precise movement control. One way to do this is through computer-based tasks, where a person moves a cursor using a mouse. By recording the cursor's position over time, researchers can measure movement speed, accuracy, and errors.
+
+An example is the circular steering task, which is described in the following section. 
+
+## Circular Steering Task
+
+The participant uses a computer mouse to move a cursor around a circular track displayed on the screen. The aim is to complete as many laps as possible while keeping the cursor within the track's boundaries as accurately and quickly as possible. 
+
+The circular track is formed by two circles sharing the same centre: an inner and an outer boundary. The space between these circles defines the target area where the cursor should remain. The width of this area determines how much room the participant has to move without leaving the track. The difficulty can be adjusted by changing the size of the circular track or the width of the target area. A narrower track requires more accurate movements.
+
+The circular track and its main components are illustrated in @fig-circular-task.
+
+![Schematic representation of the circular steering task, showing the track boundaries, target path, cursor trajectory, and an example of radial error. Adapted from Fauviaux et al. (2021).](figures/circular_task_diagram.png){#fig-circular-task width=85%}
+
+Unlike a pointing task, where the goal is to reach a single target, a circular steering task requires continuous movement. The participant must constantly change the direction of the cursor to follow the circular path. This requires visuomotor control, which is the ability to use visual information to guide and adjust movements.
+
+Therefore, performance depends on two main factors:
+
+- **Movement speed**: How fast the participant can move the cursor around the circle.
+
+- **Movement accuracy**: How consistently the cursor stays within the circle's boundaries.
+
+Moving faster may allow the participant to complete more laps, but it can also lead to more errors by making it harder to stay within the boundaries. Moving slower may improve accuracy, but it can also reduce the number of laps completed. This relationship between speed and accuracy is called the speed-accuracy trade-off.
+
+The circular steering task can therefore provide useful information about movement performance. Fauviaux et al. (2021) investigated whether this task could help identify differences in movement control in people who had experienced a stroke.
+
+## Fauviaux et al. (2021)
+
+A stroke occurs when blood flow to part of the brain is interrupted or when a blood vessel in the brain ruptures. This can damage areas involved in sensing and controlling movement, making it harder to perform accurate and coordinated movements. Some people experience weakness or a partial loss of voluntary movement on one side of the body. This is called paresis, and the affected side is known as the paretic side.
+
+The study included 18 participants, divided into two groups:
+
+- 9 healthy participants
+
+- 9 participants who had experienced a stroke
+
+Each participant performed six trials of the circular steering task, with three trials using each hand. This allowed the researchers to compare performance between hands and between the two groups.
+
+Performance was evaluated using the Index of Effective Performance (IPe), expressed in bits per second. This combines movement speed and accuracy into a single measure. It considers how difficult the movement was to perform accurately and how much time was needed. A higher IPe generally indicates more effective movement performance.
+
+The researchers compared the IPe values between the two hands of each participant to investigate differences in movement control. 
+
+The researchers found that:
+
+- Participants with stroke performed significantly worse with their affected (paretic) hand than with their non-paretic hand.
+
+- Healthy participants performed significantly worse with their non-dominant hand than with their dominant hand.
+
+These findings suggest that the circular steering task can detect differences in movement control associated with neurological impairment and hand dominance. However, because the study involved a small number of participants, further research is needed to determine how reliably the task can be used in clinical assessments.
+
+## MouseReMoCo: Software and Data Acquisition
+
+MouseReMoCo (Mouse for Research on Motor Control) is an open-source software program used to record mouse movements during motor control tasks. It displays the task on the screen and records the cursor's position over time.
+
+During the circular steering task, each recorded observation contains:
+
+- **Timestamp**: When the cursor's position was recorded. In the provided raw data, timestamps are Unix times in milliseconds, meaning the number of milliseconds that have passed since 1 January 1970 (00:00 UTC).
+
+- **X coordinate**: The horizontal position of the cursor on the screen, measured in pixels.
+
+- **Y coordinate**: The vertical position of the cursor on the screen, measured in pixels. Screen Y coordinates increase downward.
+
+- **Target status**: Whether the cursor is inside or outside the target area.
+
+By combining these observations, researchers can reconstruct the path followed by the cursor and examine how its movement changes over time.
+
+The software also records experimental markers, which identify important events during the task, such as the beginning of a recording and the transition to a pause. These markers allow researchers to identify which mouse movements belong to each recording.
+
+MouseReMoCo saves the recorded information in two CSV files. Both files begin with the same experimental parameters, such as the screen dimensions, circle centre, and target radius:
+
+- **Raw movement file** (001MoDe_R1.csv): Contains the recorded mouse positions, timestamps, and target status.
+
+- **Marker file** (001MoDe_R1.marker.csv): Contains information about the experimental settings, recording events, and performance statistics calculated by the software.
+
+The raw movement file shows what the cursor actually did, while the marker file provides the information needed to identify the recordings and interpret the results.
+
+The structure of the provided CSV files and the methods used to import and examine their contents are described in Section 02 — Data Exploration.
 
 ## Objectives of the Assignment
-xx
 
-## MouseReMoCo: Task and Recording Procedure
-xx
+The main objective of this assignment is to understand, reproduce, and validate the analysis of mouse movements recorded during a circular steering task using Python.
+
+The project uses two files generated by MouseReMoCo: the raw movement data (001MoDe_R1.csv) and the corresponding marker file (001MoDe_R1.marker.csv). These allow us to independently calculate movement performance measures and compare our results with those produced by the software.
+
+Specific objectives:
+
+- **Data visualisation**: Import the provided recordings and reproduce the reference graphs using NumPy and Matplotlib. This allows us to visualise the cursor's trajectory and understand how the movement changes over time.
+
+- **Statistical analysis and validation**: Independently calculate the movement performance measures from the raw data and compare them with the results generated by MouseReMoCo. The aim is to understand how each measure is calculated and verify whether our results match the software's reference values.
+
+- **New experiment**: Record at least one new dataset using MouseReMoCo and apply the same visualisation and statistical methods. This allows us to test whether our analysis works with independently collected data.
+
+- **Collaboration and critical reflection:** Organise the project using Git branches, pull requests, and peer reviews. Document the three most critical difficulties encountered during the assignment, explain how they were resolved, and describe how the results were verified in the final one-page submission.
+
+Overall, the goal is not simply to reproduce graphs and numerical results, but to understand how raw movement data can be used to measure and evaluate motor performance.
