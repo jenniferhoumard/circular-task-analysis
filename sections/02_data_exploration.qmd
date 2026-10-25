@@ -37,7 +37,7 @@ print(params)
 
 After the parameter line, the date and an empty line, the fourth line gives the column names (`timestamp,mouseX,mouseY,mouseInTarget`) and the samples start on the fifth line. All values are integers separated by commas, so the data can be loaded with `np.loadtxt` by skipping the first four lines.
 
-The file also contains a few lines equal to `0,0,0,0`, written by MouseReMoCo at the end of each record. They are not real samples, so we remove them before extracting the variables.
+The file also contains a few lines equal to `0,0,0,0`, written by MouseReMoCo at the end of each recording. They are not real samples, so we remove them before extracting the variables.
 
 ```{python}
 # Load the numerical part of the file (skip the 4 header lines)
@@ -45,7 +45,6 @@ data = np.loadtxt(data_file, delimiter=",", skiprows=4, dtype=np.int64)
 
 # Remove the separator lines "0,0,0,0" (timestamp equal to 0)
 is_separator = data[:, 0] == 0
-print("Separator lines removed:", is_separator.sum())
 data = data[~is_separator]
 
 # Extract the columns
@@ -57,10 +56,12 @@ in_target = data[:, 3]   # 1 = inside the target, 0 = outside
 # Time in seconds since the first sample
 time_s = (time_ms - time_ms[0]) / 1000
 
+print("Separator lines removed:", is_separator.sum())
 print("Number of samples:", len(time_ms))
 print(f"Session duration: {time_s[-1]:.2f} s")
 ```
 
+The session duration (about 180 s) is the total elapsed time between the first and the last sample, **including the pauses**. The session contains 5 recordings of about 20 s each (≈ 100 s of active recording), separated by 4 pauses of 20 s (≈ 80 s). The raw file only contains samples during the recordings: no sample is written during the pauses.
 
 ### Marker Data
 
