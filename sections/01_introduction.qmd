@@ -16,7 +16,7 @@ An example is the circular steering task, which is described in the following se
 
 ## Circular Steering Task
 
-The participant uses a computer mouse to move a cursor around a circular track displayed on the screen. The aim is to complete as many laps as possible while keeping the cursor within the track's boundaries as accurately and quickly as possible. 
+The participant uses a computer mouse to move a cursor around a circular track displayed on the screen. The aim is to complete as many laps as possible while keeping the cursor within the track's boundaries.
 
 The circular track is formed by two circles sharing the same centre: an inner and an outer boundary. The space between these circles defines the target area where the cursor should remain. The width of this area determines how much room the participant has to move without leaving the track. The difficulty can be adjusted by changing the size of the circular track or the width of the target area. A narrower track requires more accurate movements.
 
