@@ -67,11 +67,11 @@ The session duration (about 180 s) is the total elapsed time between the first a
 
 The marker file has a mixed structure: the parameter line, the start date, a list of timestamped events, and finally the summary table computed by MouseReMoCo. Because of this mixed structure, it cannot be loaded with `np.loadtxt`, so we read it line by line and decide what to do with each line based on its content:
 
-- lines containing `DoCycleChange:DoRecord` give the **start** of each record;
-- lines containing `DoCycleChange:DoPause` give the **end** of each record;
+- lines containing `DoCycleChange:DoRecord` give the **start** of each recording;
+- lines containing `DoCycleChange:DoPause` give the **end** of each recording;
 - the lines starting with `Var`, `Theory` and `Rec` form the summary table.
 
-The 6th record (`Rec006`) is empty, because the window was closed during the pause before it started. We therefore only keep the records that were actually recorded.
+The 6th recording (`Rec006`) is empty, because the window was closed during the pause before it started. We therefore only keep the recordings that were actually performed.
 
 ```{python}
 # Read all the lines of the marker file
@@ -105,14 +105,14 @@ record_start_ms = np.array(record_start_ms)
 record_end_ms = np.array(record_end_ms)
 n_records = len(record_start_ms)
 
-# Keep only the records that were actually recorded (Rec006 is empty)
+# Keep only the recordings that were actually performed (Rec006 is empty)
 marker_results = np.array(marker_results)[:n_records]
 
-print("Number of records:", n_records)
+np.set_printoptions(suppress=True)
+print("Number of recordings:", n_records)
 print("Variables:", marker_names)
 print("Theory:", marker_theory)
-print("Results (one row per record):")
-np.set_printoptions(suppress=True)
+print("Results (one row per recording):")
 print(marker_results)
 ```
 
