@@ -118,19 +118,39 @@ print(marker_results)
 
 ## Understanding the Data Structure
 
-Before visualising and analysing the movement, we need to understand what each parameter and each recorded variable means, how time is encoded, and how the samples are distributed between the records.
+Before visualising and analysing the movement, we need to understand what each parameter and each recorded variable means, how time is encoded, and how the samples are distributed between the recordings.
 
 ### Experimental Parameters and Recorded Variables
 
-The most important parameters stored in `params` are:
+The most important parameters stored in `params` are summarised below.
 
-- `screenWidth`, `screenHeight`: size of the drawing area (pixels).
-- `centerX`, `centerY`: position of the centre of the circular track, in the same screen coordinates as the mouse position.
-- `internalRadius` (170 px) and `externalRadius` (250 px): radii of the inner and outer boundaries of the track.
-- `cursorRadius` (16 px) and `borderRadius` (1 px): radius of the cursor and thickness of the border lines.
-- `taskRadius` (209.5 px) and `taskTolerance` (47 px): the radius of the path the cursor centre should follow, and the width available for the cursor centre. The cursor is only fully inside the track when its centre is at least one cursor radius away from each boundary: from 170 + 16 = 186 px to 250 − 16 − 1 = 233 px. The width of this band is 233 − 186 = 47 px (`taskTolerance`) and its middle is 209.5 px (`taskRadius`).
-- `indexOfDifficulty` (≈ 28.0 bits): the difficulty of one lap, equal to the length of the path divided by its width, 2π × 209.5 / 47.
-- `cycleMaxNumber` (6) and `cycleDuration` (20 s): number of planned records and duration of each record (and of each pause).
+| Parameter | Value | Meaning |
+|---|---|---|
+| `screenWidth` | 1104 px | Width of the screen drawing area |
+| `screenHeight` | 661 px | Height of the screen drawing area |
+| `centerX` | 552 px | Horizontal position of the circular track's centre |
+| `centerY` | 330 px | Vertical position of the circular track's centre |
+| `internalRadius` | 170 px | Inner boundary of the circular track |
+| `externalRadius` | 250 px | Outer boundary of the circular track |
+| `cursorRadius` | 16 px | Radius of the cursor |
+| `borderRadius` | 1 px | Thickness parameter of the track border |
+| `taskRadius` | 209.5 px | Ideal radius followed by the cursor centre |
+| `taskTolerance` | 47 px | Available radial width for the cursor centre |
+| `indexOfDifficulty` | ≈ 28.0 bits | Theoretical difficulty of one lap (path length divided by target width) |
+| `cycleMaxNumber` | 6 | Number of planned recordings |
+| `cycleDuration` | 20 s | Duration of each recording and of each pause |
+
+`taskRadius` and `taskTolerance` are not independent parameters: they can be derived from the track geometry (@fig-track-parameters). The cursor is only fully inside the track when its centre is at least one cursor radius away from each boundary:
+
+- effective inner limit: `internalRadius` + `cursorRadius` = 170 + 16 = **186 px**;
+- effective outer limit: `externalRadius` − `cursorRadius` − `borderRadius` = 250 − 16 − 1 = **233 px**;
+- `taskTolerance` = 233 − 186 = **47 px** (width of the band available for the cursor centre);
+- `taskRadius` = (186 + 233) / 2 = **209.5 px** (middle of this band);
+- `indexOfDifficulty` = 2π × 209.5 / 47 ≈ **28.0 bits** (length of the path divided by its width).
+
+![Schematic representation of the circular track showing the boundaries, cursor radius, effective limits, task radius and task tolerance.](figures/track_parameters.png){#fig-track-parameters width=80%}
+
+The border thickness is subtracted on the outer side only. We could not find the reason for this asymmetry in the MouseReMoCo documentation (a possible explanation is that the 1 px border line is drawn on the same side of both circles, so it only reduces the track on the outer side), but these limits are confirmed by the data below.
 
 The raw movement file records four variables for each sample:
 
@@ -138,19 +158,30 @@ The raw movement file records four variables for each sample:
 - `mouseX`, `mouseY`: cursor position in pixels, in screen coordinates. The origin is at the top-left corner of the drawing area, x increases to the right and **y increases downwards**;
 - `mouseInTarget`: 1 when the cursor is inside the track, 0 otherwise.
 
-To analyse the movement around the circle, we express the cursor position relative to the centre of the track. We keep the screen orientation (y pointing downwards), so the y-axis has to be inverted when plotting to obtain the same view as on the screen.
+MouseReMoCo records the cursor position relative to the top-left corner of the screen. However, because the task involves a circular track, we are more interested in the position of the cursor relative to the centre of the circle. We therefore subtract `centerX` and `centerY` from the mouse coordinates, so that the centre of the circle becomes the new origin. For example, if the centre is at (552, 330) and the cursor at (752, 330), the cursor is 200 px to the right of the centre. We keep the screen orientation (y pointing downwards), so the y-axis has to be inverted when plotting to obtain the same view as on the screen.
+
+We then use the Pythagorean theorem, r = √(x² + y²), to compute the distance between the cursor and the centre, whatever its direction. This distance tells us whether the cursor stays between the boundaries of the track, which is central for the accuracy analysis in Section 4.
+
+To check our interpretation of the parameters, we select the samples labelled by MouseReMoCo as inside the target (`in_target == 1`) and look at their smallest and largest distances to the centre (`.min()` and `.max()`). We do the same for the samples labelled as outside the target, on each side of the track.
 
 ```{python}
 # Cursor position relative to the centre of the track (pixels, y pointing downwards)
 x = mouse_x - params["centerX"]
 y = mouse_y - params["centerY"]
 
-# Check: distance to the centre of the samples flagged as "inside the target"
+# Distance between the cursor and the centre of the track (pixels)
 r = np.sqrt(x**2 + y**2)
-print(f"Radius when inside the target: {r[in_target == 1].min():.1f} to {r[in_target == 1].max():.1f} px")
+
+# Check the limits of the target
+r_inside = r[in_target == 1]
+r_outside = r[in_target == 0]
+
+print(f"Inside the target: from {r_inside.min():.3f} to {r_inside.max():.3f} px")
+print(f"Closest outside sample, inner side: {r_outside[r_outside < params['taskRadius']].max():.3f} px")
+print(f"Closest outside sample, outer side: {r_outside[r_outside > params['taskRadius']].min():.3f} px")
 ```
 
-The samples flagged as inside the target are all between 186 and 233 px from the centre, which confirms both the centring of the coordinates and our interpretation of `taskRadius` and `taskTolerance`.
+All the samples labelled as inside the target are between 186 and 233 px from the centre, and the closest samples labelled as outside are just beyond these limits. This confirms both the centring of the coordinates and the effective limits computed above.
 
 ### Timestamps, Sampling and Recording Intervals
 
