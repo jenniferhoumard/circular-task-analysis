@@ -32,7 +32,8 @@ for item in first_line.split(";"):
         pass                      # non-numerical parameter: kept as text
     params[name] = value
 
-print(params)
+for name, value in params.items():
+    print(f"{name:<18} {value}")
 ```
 
 After the parameter line, the date and an empty line, the fourth line gives the column names (`timestamp,mouseX,mouseY,mouseInTarget`) and the samples start on the fifth line. All values are integers separated by commas, so the data can be loaded with `np.loadtxt` by skipping the first four lines.
@@ -240,13 +241,13 @@ for i in range(n_records):
     outside_pct.append(100 * np.mean(in_target[idx] == 0))
 
 print("Samples outside the recordings:", n_outside_records)
-print("Time of the first sample relative to the start of recording 0:", first_sample_offset_ms, "ms")
+print("First sample relative to the start of recording 0:", first_sample_offset_ms, "ms")
 print()
+print("recording | first sample | intervals (ms)     | duplicated | outside")
+print("          | after (s)    | min / median / max | timestamps | target (%)")
 for i in range(n_records):
-    print(f"recording {i}: first sample after {delay_s[i]:.3f} s | "
-          f"intervals: min {dt_min[i]} ms, median {dt_median[i]:.0f} ms, max {dt_max[i]} ms, "
-          f"{n_duplicates[i]} duplicated timestamps | "
-          f"outside target: {outside_pct[i]:.1f} %")
+    print(f"{i:>9} | {delay_s[i]:>12.3f} | {dt_min[i]:>3} / {dt_median[i]:>6.0f} / {dt_max[i]:>3} | "
+          f"{n_duplicates[i]:>10} | {outside_pct[i]:>10.1f}")
 ```
 
 These checks lead to the following observations:
