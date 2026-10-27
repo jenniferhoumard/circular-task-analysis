@@ -1,21 +1,260 @@
-
 ## Importing the Provided Data
-xx
+
+MouseReMoCo produced two CSV files for this session, both stored in the `data/` folder:
+
+- the **raw movement file**, which contains the experimental parameters (first line), the date of the session, and then one line per sample with the timestamp, the cursor position and whether the cursor is inside the target;
+- the **marker file**, which contains the same parameter line, the events of the session (start of each recording and of each pause) and the summary table computed by the software.
+
+Both files start with a non-tabular header, so they cannot be loaded directly as a single table: the header and the numerical data have to be read separately. We first define the paths to the two files.
+
+```{python}
+# Paths to the data files (relative to the project root, where master.qmd is rendered)
+data_file = "data/001MoDe_R1.csv"
+marker_file = "data/001MoDe_R1.marker.csv"
+```
 
 ### Mouse Position Data
-xx
+
+The first line of the raw movement file contains all the experimental parameters of the task, written as `name value` pairs separated by semicolons (e.g. `screenWidth 1104;screenHeight 661;...`). We read this line and store the parameters in a dictionary. Numerical values are converted to `float`, while the other values (colours, software name, version…) are kept as text.
+
+```{python}
+# Read only the first line of the raw movement file (the parameter line)
+with open(data_file) as f:
+    first_line = f.readline().strip()
+
+# Split the line into "name value" pairs and store them in a dictionary
+params = {}
+for item in first_line.split(";"):
+    name, value = item.split(" ", 1)
+    try:
+        value = float(value)      # numerical parameter
+    except ValueError:
+        pass                      # non-numerical parameter: kept as text
+    params[name] = value
+
+for name, value in params.items():
+    print(f"{name:<18} {value}")
+```
+
+After the parameter line, the date and an empty line, the fourth line gives the column names (`timestamp,mouseX,mouseY,mouseInTarget`) and the samples start on the fifth line. All values are integers separated by commas, so the data can be loaded with `np.loadtxt` by skipping the first four lines.
+
+The file also contains a few lines equal to `0,0,0,0`, written by MouseReMoCo at the end of each recording. They are not real samples, so we remove them before extracting the variables.
+
+```{python}
+# Load the numerical part of the file (skip the 4 header lines)
+data = np.loadtxt(data_file, delimiter=",", skiprows=4, dtype=np.int64)
+
+# Remove the separator lines "0,0,0,0" (timestamp equal to 0)
+is_separator = data[:, 0] == 0
+data = data[~is_separator]
+
+# Extract the columns
+time_ms = data[:, 0]     # Unix timestamp (ms)
+mouse_x = data[:, 1]     # cursor x position on screen (pixel)
+mouse_y = data[:, 2]     # cursor y position on screen (pixel)
+in_target = data[:, 3]   # 1 = inside the target, 0 = outside
+
+# Time in seconds since the first sample
+time_s = (time_ms - time_ms[0]) / 1000
+
+print("Separator lines removed:", is_separator.sum())
+print("Number of samples:", len(time_ms))
+print(f"Session duration: {time_s[-1]:.2f} s")
+```
+
+The session duration (about 180 s) is the total elapsed time between the first and the last sample, **including the pauses**. The session contains 5 recordings of about 20 s each (≈ 100 s of active recording), separated by 4 pauses of 20 s (≈ 80 s). The raw file only contains samples during the recordings: no sample is written during the pauses.
 
 ### Marker Data
-xx
+
+The marker file has a mixed structure: the parameter line, the start date, a list of timestamped events, and finally the summary table computed by MouseReMoCo. Because of this mixed structure, it cannot be loaded with `np.loadtxt`, so we read it line by line and decide what to do with each line based on its content:
+
+- lines containing `DoCycleChange:DoRecord` give the **start** of each recording;
+- lines containing `DoCycleChange:DoPause` give the **end** of each recording;
+- the lines starting with `Var`, `Theory` and `Rec` form the summary table.
+
+The 6th recording (`Rec006`) is empty, because the window was closed during the pause before it started. We therefore only keep the recordings that were actually performed.
+
+```{python}
+# Read all the lines of the marker file
+with open(marker_file) as f:
+    marker_lines = f.readlines()
+
+record_start_ms = []
+record_end_ms = []
+marker_results = []
+
+for line in marker_lines:
+    # Events: the timestamp (ms) is the 2nd comma-separated field
+    if "DoCycleChange:DoRecord" in line:
+        record_start_ms.append(int(line.split(",")[1]))
+    elif "DoCycleChange:DoPause" in line:
+        record_end_ms.append(int(line.split(",")[1]))
+
+    # Summary table: first field = row name, next 8 fields = values
+    row = line.strip()
+    if row.startswith("Var"):
+        marker_names = [name.strip().replace("/", "_") for name in row.split(",")[1:9]]
+    elif row.startswith("Theory"):
+        # Some cells are empty in the Theory row: replace them with NaN
+        marker_theory = np.array([float(v) if v.strip() else np.nan
+                                  for v in row.split(",")[1:9]])
+    elif row.startswith("Rec"):
+        marker_results.append([float(v) for v in row.split(",")[1:9]])
+
+# Convert to numpy arrays
+record_start_ms = np.array(record_start_ms)
+record_end_ms = np.array(record_end_ms)
+n_records = len(record_start_ms)
+
+# Keep only the recordings that were actually performed (Rec006 is empty)
+marker_results = np.array(marker_results)[:n_records]
+
+np.set_printoptions(suppress=True)
+print("Number of recordings:", n_records)
+print("Variables:", marker_names)
+print("Theory:", marker_theory)
+print("Results (one row per recording):")
+print(marker_results)
+```
 
 ## Understanding the Data Structure
-xx
+
+Before visualising and analysing the movement, we need to understand what each parameter and each recorded variable means, how time is encoded, and how the samples are distributed between the recordings.
 
 ### Experimental Parameters and Recorded Variables
-xx
+
+The most important parameters stored in `params` are summarised below.
+
+| Parameter | Value | Meaning |
+|---|---|---|
+| `screenWidth` | 1104 px | Width of the screen drawing area |
+| `screenHeight` | 661 px | Height of the screen drawing area |
+| `centerX` | 552 px | Horizontal position of the circular track's centre |
+| `centerY` | 330 px | Vertical position of the circular track's centre |
+| `internalRadius` | 170 px | Inner boundary of the circular track |
+| `externalRadius` | 250 px | Outer boundary of the circular track |
+| `cursorRadius` | 16 px | Radius of the cursor |
+| `borderRadius` | 1 px | Thickness parameter of the track border |
+| `taskRadius` | 209.5 px | Ideal radius followed by the cursor centre |
+| `taskTolerance` | 47 px | Available radial width for the cursor centre |
+| `indexOfDifficulty` | ≈ 28.0 bits | Theoretical difficulty of one lap (path length divided by target width) |
+| `cycleMaxNumber` | 6 | Number of planned recordings |
+| `cycleDuration` | 20 s | Duration of each recording and of each pause |
+
+`taskRadius` and `taskTolerance` are not independent parameters: they can be derived from the track geometry (@fig-track-parameters). The cursor is only fully inside the track when its centre is at least one cursor radius away from each boundary:
+
+- effective inner limit: `internalRadius` + `cursorRadius` = 170 + 16 = **186 px**;
+- effective outer limit: `externalRadius` − `cursorRadius` − `borderRadius` = 250 − 16 − 1 = **233 px**;
+- `taskTolerance` = 233 − 186 = **47 px** (width of the band available for the cursor centre);
+- `taskRadius` = (186 + 233) / 2 = **209.5 px** (middle of this band);
+- `indexOfDifficulty` = 2π × 209.5 / 47 ≈ **28.0 bits** (length of the path divided by its width).
+
+![Schematic representation of the circular track showing the boundaries, cursor radius, effective limits, task radius and task tolerance.](figures/track_parameters.png){#fig-track-parameters width=80%}
+
+The border thickness is subtracted on the outer side only. We could not find the reason for this asymmetry in the MouseReMoCo documentation (a possible explanation is that the 1 px border line is drawn on the same side of both circles, so it only reduces the track on the outer side), but these limits are confirmed by the data below.
+
+The raw movement file records four variables for each sample:
+
+- `timestamp`: time of the sample, in milliseconds since 1 January 1970 (Unix time);
+- `mouseX`, `mouseY`: cursor position in pixels, in screen coordinates. The origin is at the top-left corner of the drawing area, x increases to the right and **y increases downwards**;
+- `mouseInTarget`: 1 when the cursor is inside the track, 0 otherwise.
+
+MouseReMoCo records the cursor position relative to the top-left corner of the screen. However, because the task involves a circular track, we are more interested in the position of the cursor relative to the centre of the circle. We therefore subtract `centerX` and `centerY` from the mouse coordinates, so that the centre of the circle becomes the new origin. For example, if the centre is at (552, 330) and the cursor at (752, 330), the cursor is 200 px to the right of the centre. We keep the screen orientation (y pointing downwards), so the y-axis has to be inverted when plotting to obtain the same view as on the screen.
+
+We then use the Pythagorean theorem, r = √(x² + y²), to compute the distance between the cursor and the centre, whatever its direction. This distance tells us whether the cursor stays between the boundaries of the track, which is central for the accuracy analysis in Section 4.
+
+To check our interpretation of the parameters, we select the samples labelled by MouseReMoCo as inside the target (`in_target == 1`) and look at their smallest and largest distances to the centre (`.min()` and `.max()`). We do the same for the samples labelled as outside the target, on each side of the track.
+
+```{python}
+# Cursor position relative to the centre of the track (pixels, y pointing downwards)
+x = mouse_x - params["centerX"]
+y = mouse_y - params["centerY"]
+
+# Distance between the cursor and the centre of the track (pixels)
+r = np.sqrt(x**2 + y**2)
+
+# Check the limits of the target
+r_inside = r[in_target == 1]
+r_outside = r[in_target == 0]
+
+print(f"Inside the target: from {r_inside.min():.3f} to {r_inside.max():.3f} px")
+print(f"Closest outside sample, inner side: {r_outside[r_outside < params['taskRadius']].max():.3f} px")
+print(f"Closest outside sample, outer side: {r_outside[r_outside > params['taskRadius']].min():.3f} px")
+```
+
+All the samples labelled as inside the target are between 186 and 233 px from the centre, and the closest samples labelled as outside are just beyond these limits. This confirms both the centring of the coordinates and the effective limits computed above.
 
 ### Timestamps, Sampling and Recording Intervals
-xx
+
+The dataset contains 5 recordings of about 20 s each, separated by pauses of 20 s. The session lasted about 3 minutes, but the cursor was only recorded during the recordings: the raw file does not contain the pauses. To know which samples belong to which recording, we use the start (`DoRecord`) and end (`DoPause`) timestamps read in the marker file: a sample belongs to recording *i* if its timestamp lies between the start and the end of that recording.
+
+For each recording, we then compute the number of samples, the duration (time between the first and the last sample) and the mean sampling frequency (number of intervals divided by the duration).
+
+```{python}
+record_idx = []
+record_duration_s = []
+record_fs_hz = []
+
+for i in range(n_records):
+    # Indices of the samples recorded between the start and the end of recording i
+    idx = np.where((time_ms >= record_start_ms[i]) & (time_ms <= record_end_ms[i]))[0]
+    record_idx.append(idx)
+
+    # Duration and mean sampling frequency of the recording
+    duration_s = (time_ms[idx[-1]] - time_ms[idx[0]]) / 1000
+    record_duration_s.append(duration_s)
+    record_fs_hz.append((len(idx) - 1) / duration_s)
+
+record_duration_s = np.array(record_duration_s)
+record_fs_hz = np.array(record_fs_hz)
+
+for i in range(n_records):
+    print(f"record {i}: {len(record_idx[i])} samples in {record_duration_s[i]:.2f} s "
+          f"({record_fs_hz[i]:.2f} Hz)")
+```
+
+The results are identical to the ones given in the assignment. The sampling frequency is close to 200 Hz but not exactly constant (between 197 and 200 Hz depending on the recording), which is discussed in the next section.
 
 ## Data Quality Checks
-xx
+
+Before using the data, we checked several points that could bias the figures or the statistics.
+
+```{python}
+# 1. Samples that do not belong to any recording
+n_in_records = sum(len(idx) for idx in record_idx)
+n_outside_records = len(time_ms) - n_in_records
+first_sample_offset_ms = time_ms[0] - record_start_ms[0]
+
+# 2. Sampling regularity and time outside the target, for each recording
+delay_s = []
+dt_min, dt_median, dt_max, n_duplicates = [], [], [], []
+outside_pct = []
+
+for i in range(n_records):
+    idx = record_idx[i]
+    dt_ms = np.diff(time_ms[idx])          # time between consecutive samples
+    delay_s.append((time_ms[idx[0]] - record_start_ms[i]) / 1000)
+    dt_min.append(dt_ms.min())
+    dt_median.append(np.median(dt_ms))
+    dt_max.append(dt_ms.max())
+    n_duplicates.append(np.sum(dt_ms == 0))
+    outside_pct.append(100 * np.mean(in_target[idx] == 0))
+
+print("Samples outside the recordings:", n_outside_records)
+print("First sample relative to the start of recording 0:", first_sample_offset_ms, "ms")
+print()
+print("recording | first sample | intervals (ms)     | duplicated | outside")
+print("          | after (s)    | min / median / max | timestamps | target (%)")
+for i in range(n_records):
+    print(f"{i:>9} | {delay_s[i]:>12.3f} | {dt_min[i]:>3} / {dt_median[i]:>6.0f} / {dt_max[i]:>3} | "
+          f"{n_duplicates[i]:>10} | {outside_pct[i]:>10.1f}")
+```
+
+These checks lead to the following observations:
+
+- **Separator lines.** MouseReMoCo writes a line `0,0,0,0` at the end of each recording. These 5 lines are not real samples and were removed when importing the data (Section 2.1.1).
+- **Samples outside the recordings.** One sample was recorded 4 ms before the start of the first recording. It does not belong to any recording and is therefore ignored when the data are split into recordings.
+- **Missing recording.** Six recordings were planned (`cycleMaxNumber` = 6), but the window was closed during the 5th pause, so only 5 recordings contain data. The empty `Rec006` line of the marker file was not kept.
+- **Irregular sampling.** The median interval between two samples is about 5 ms (≈ 200 Hz), but intervals range from 0 ms to more than 100 ms, and the first sample of a recording can arrive up to about 0.55 s after its start. This suggests that MouseReMoCo records a sample each time the mouse moves rather than at a fixed rate. As a consequence, time must always be taken from the timestamps rather than computed from a fixed sampling frequency.
+- **Duplicated timestamps.** Some consecutive samples have exactly the same timestamp (time difference of 0 ms). This matters if velocities are computed later: dividing a displacement by a time interval of 0 ms would give an infinite value, so these samples have to be handled (for example removed or merged) before any derivative is computed.
+- **Beginning of the recordings.** Most of the samples outside the target occur during the first second of each recording, while the movement is being initiated. In recording 0, the cursor actually starts inside the target, leaves it after about 0.1 s and moves far outside the track (up to about 370 px from the centre) before coming back after about 0.9 s. This early excursion explains the much larger effective tolerance of recording 0 (`Te` = 91.79 px) in the marker table, and should be kept in mind when recomputing the statistics (Section 4).
