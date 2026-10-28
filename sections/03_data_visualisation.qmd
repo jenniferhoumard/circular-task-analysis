@@ -89,6 +89,7 @@ plt.show()
 ```
 
 The session alternates 20 s of recording and 20 s of pause, as set by `cycleDuration`. During each recording, x and y oscillate between about −230 and +230 px: these are the two projections of a circular movement. The larger values at the very start of recordings 1 to 4 correspond to the cursor being brought back onto the track from wherever it was left during the pause. At this scale, the target status cannot be read: it is visible in the figures of each recording below. The number of samples, the duration and the sampling frequency of each recording, which the assignment prints at this point, were computed in Section 2.2.2 and are identical to the expected results.
+
 ### Mouse Trajectory and Circular Target
 
 @fig-session-trajectory shows the trajectory of the cursor during the whole session, with the target for the cursor centre (186 to 233 px from the centre). Because y points upwards, the figure is in the same orientation as what the participant saw on the screen.
