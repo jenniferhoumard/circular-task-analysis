@@ -189,3 +189,42 @@ This figure shows that the errors are not spread evenly in time: a large part of
 - Recording 0 is different: the cursor is already on the track when the recording starts, but it leaves it almost immediately and goes up to about 370 px from the centre before coming back after about 0.9 s (Section 2.3).
 
 After this first second, the participant stays inside the band most of the time, with a few short excursions that are almost always towards the outside of the circle (r > 233 px).
+
+The variability of `r` is what MouseReMoCo uses to compute the effective tolerance `Te` (Section 4), so we checked how much this first second weighs on it. @fig-radius-sd compares the standard deviation of `r` in each recording computed (1) on all the samples, (2) from the first sample inside the target, which is where MouseReMoCo starts counting (Section 4), and (3) after the first second of the recording.
+
+```{python}
+#| label: fig-radius-sd
+#| fig-cap: "Standard deviation of the distance to the centre in each recording, depending on which samples are kept: all the samples, the samples from the first entry into the target, or the samples after the first second of the recording."
+
+sd_all = np.zeros(n_records)
+sd_after_entry = np.zeros(n_records)
+sd_after_1s = np.zeros(n_records)
+
+for i in range(n_records):
+    idx = record_idx[i]
+    t_record = time_s[idx] - record_start_s[i]
+    first_inside = np.argmax(in_target[idx] == 1)     # index of the first sample inside the target
+
+    sd_all[i] = np.std(r[idx])
+    sd_after_entry[i] = np.std(r[idx][first_inside:])
+    sd_after_1s[i] = np.std(r[idx][t_record > 1])
+
+fig, ax = plt.subplots(figsize=(8, 3.5))
+positions = np.arange(n_records)
+width = 0.26
+ax.bar(positions - width, sd_all, width * 0.92, color="#2a78d6", label="all samples")
+ax.bar(positions, sd_after_entry, width * 0.92, color="#eb6834", label="from the first entry into the target")
+ax.bar(positions + width, sd_after_1s, width * 0.92, color="#1baf7a", label="after the first second")
+ax.set_xticks(positions, [f"recording {i}" for i in range(n_records)])
+ax.set_ylabel("SD of r (pixel)")
+ax.legend(fontsize=8, loc="upper center", ncols=3, bbox_to_anchor=(0.5, 1.16), frameon=False)
+plt.tight_layout()
+plt.show()
+
+print("recording | SD of r (px)")
+print("          |  all samples | from first entry | after 1 s")
+for i in range(n_records):
+    print(f"{i:>9} | {sd_all[i]:>12.2f} | {sd_after_entry[i]:>16.2f} | {sd_after_1s[i]:>9.2f}")
+```
+
+Starting from the first entry into the target removes the approach phase of recordings 1 to 4: their standard deviation drops to 8–11 px and becomes almost identical to the one obtained after removing the first second. Recording 0 is the exception: since its first sample is already inside the target, nothing is removed, and its large excursion just after the start doubles its standard deviation (22.2 px instead of about 10 px after the first second). This is why `Te` is more than twice as large in recording 0 (91.79 px) as in the other recordings of the marker table: it reflects one excursion at the start of the recording rather than a less precise movement during the whole recording. The consequences for the statistics are discussed in Sections 4 and 6.
