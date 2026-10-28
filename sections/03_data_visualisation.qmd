@@ -114,3 +114,37 @@ plt.show()
 ```
 
 The green samples fill exactly the band between the two red circles, which confirms that `mouseInTarget` corresponds to the position of the cursor *centre* between 186 and 233 px (this was checked numerically in Section 2.2.1). The blue lines outside the ring are the cursor coming onto the track at the start of the recordings, and the excursion of recording 0 on the left. Some straight lines also join the end of one recording to the start of the next one, because the samples of the whole session are drawn as a single line.
+
+### Individual Recordings
+
+@fig-record-0 to @fig-record-4 show each recording, with its trajectory on the left and the corresponding signals on the right, so that each excursion outside the target (red) can be matched with the moment it happens. As in the assignment, the vertical axis of the trajectories is inverted (Y increases downwards).
+
+```{python}
+#| label: fig-record-0
+#| fig-cap: "Recording 0. Left: trajectory, with the limits of the screen (magenta) and the target (yellow); green: inside the target, red: outside. Right: x position, y position and target status against time."
+plot_record(0)
+```
+
+```{python}
+#| label: fig-record-1
+#| fig-cap: "Recording 1. Left: trajectory, with the limits of the screen (magenta) and the target (yellow); green: inside the target, red: outside. Right: x position, y position and target status against time."
+plot_record(1)
+```
+
+```{python}
+#| label: fig-record-2
+#| fig-cap: "Recording 2. Left: trajectory, with the limits of the screen (magenta) and the target (yellow); green: inside the target, red: outside. Right: x position, y position and target status against time."
+plot_record(2)
+```
+
+```{python}
+#| label: fig-record-3
+#| fig-cap: "Recording 3. Left: trajectory, with the limits of the screen (magenta) and the target (yellow); green: inside the target, red: outside. Right: x position, y position and target status against time."
+plot_record(3)
+```
+
+```{python}
+#| label: fig-record-4
+#| fig-cap: "Recording 4. Left: trajectory, with the limits of the screen (magenta) and the target (yellow); green: inside the target, red: outside. Right: x position, y position and target status against time."
+plot_record(4)
+```
