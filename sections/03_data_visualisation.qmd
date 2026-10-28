@@ -154,3 +154,38 @@ In every recording, x and y are two sinusoids shifted by a quarter of a period, 
 The target status shows that the cursor is outside the target at the start of each recording, while it is brought onto the track (about 0.3 to 0.8 s after the first sample in recordings 1 to 4): these are the long red lines coming from the right of the trajectories. Recording 0 is different: the cursor is already inside the target when the recording starts, but it leaves it after about 0.1 s and only comes back after about 0.9 s (Section 2.3): this is the red loop on the left of its trajectory. After this first second, the cursor only leaves the target for short moments.
 
 The five trajectories have the same shape and stay well inside the screen. The red samples show that, when the participant leaves the target, it is almost always towards the outside of the circle. Recordings 0, 4 and 2 have the most samples outside the target, and recording 3 the fewest (`outside_pct`, Section 2.3).
+
+## Visualising Movement Accuracy
+
+The trajectory plots show *where* the errors are, but not *when* they happen. Since the task is to stay on a circle, the natural measure of accuracy is the distance of the cursor centre to the centre of the track, `r`. @fig-radius-time shows `r` against time for each recording: the shaded band is the target for the cursor centre (186 to 233 px) and the dotted line is the ideal radius.
+
+```{python}
+#| label: fig-radius-time
+#| fig-cap: "Distance between the cursor centre and the centre of the track during each recording. Shaded band: target for the cursor centre (186 to 233 px). Dotted line: ideal path (209.5 px). Red: samples outside the target. Values above 330 px (start of the recordings) are cut."
+
+fig, axes = plt.subplots(n_records, 1, figsize=(10, 7), sharex=True, sharey=True)
+
+for i in range(n_records):
+    idx = record_idx[i]
+    t_record = time_s[idx] - record_start_s[i]     # time since the start of the recording
+    outside = in_target[idx] == 0
+
+    ax = axes[i]
+    ax.axhspan(r_min, r_max, color="0.9", zorder=0)
+    ax.axhline(params["taskRadius"], color="0.4", ls=":", lw=1)
+    ax.plot(t_record, r[idx], color="C0", lw=0.6)
+    ax.plot(t_record[outside], r[idx][outside], ".", color="red", ms=2)
+    ax.set_ylabel(f"recording {i}\nr (pixel)")
+
+axes[0].set_ylim(130, 330)
+axes[-1].set_xlabel("time since the start of the recording (s)")
+plt.tight_layout()
+plt.show()
+```
+
+This figure shows that the errors are not spread evenly in time: a large part of them occur during the **first second** of each recording, as already noted in Section 2.3.
+
+- In recordings 1 to 4, the first samples are 310 to 420 px from the centre: the cursor is brought onto the track, which takes 0.3 to 0.8 s.
+- Recording 0 is different: the cursor is already on the track when the recording starts, but it leaves it almost immediately and goes up to about 370 px from the centre before coming back after about 0.9 s (Section 2.3).
+
+After this first second, the participant stays inside the band most of the time, with a few short excursions that are almost always towards the outside of the circle (r > 233 px).
