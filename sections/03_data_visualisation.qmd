@@ -1,12 +1,67 @@
 
-## Reproducing the Assignment Figures
-xx
+This section uses the variables created in Section 2: the parameters (`params`), the samples without the separator lines (`time_s`, `in_target`), the cursor position relative to the centre of the track (`x`, `y`), its distance to the centre (`r`) and the indices of the samples of each recording (`record_idx`, built from the `DoRecord` / `DoPause` events of the marker file).
 
-### Mouse Position and Recording Intervals
-xx
+In Section 2, `y` keeps the screen orientation (y pointing downwards). The figures of the assignment use the opposite convention, with **y pointing upwards** (`centerY − mouseY`): for example, recording 1 starts at y ≈ −170 px in the assignment figures, while `y` = +170 px in our data. To reproduce the figures exactly, we therefore use `y_up = -y`.
 
-### Mouse Trajectory and Circular Target
-xx
+We also define a function that draws the two figures shown for each recording in the assignment, side by side, and a few values used in the accuracy figures at the end of the section:
 
-## Visualising Movement Accuracy
-xx
+- `plot_record(i)`: on the left, the trajectory of recording *i* in the plane of the screen, with the limits of the screen (magenta), the target (yellow), and the samples inside (green) and outside (red) the target; on the right, the x position, y position and target status of recording *i* against time;
+- `r_min` and `r_max`: the limits of the band available for the cursor centre (186 and 233 px, see Section 2.2.1);
+- `record_start_s`: the start of each recording, in seconds since the first sample (same time axis as `time_s`).
+
+```{python}
+# y pointing upwards, as in the assignment figures
+y_up = -y
+
+# Limits for the cursor centre: the whole cursor must be inside the track
+r_min = params["internalRadius"] + params["cursorRadius"]                              # 186 px
+r_max = params["externalRadius"] - params["cursorRadius"] - params["borderRadius"]     # 233 px
+
+# Start of each recording, in seconds since the first sample (same time axis as time_s)
+record_start_s = (record_start_ms - time_ms[0]) / 1000
+
+
+def plot_record(i):
+    """Trajectory (left) and x, y, target status against time (right) of recording i."""
+    idx = record_idx[i]
+    inside = in_target[idx] == 1
+
+    # Layout: the trajectory takes the 3 rows on the left, one signal per row on the right
+    fig, axes = plt.subplot_mosaic([["traj", "x"], ["traj", "y"], ["traj", "inside"]],
+                                   figsize=(10, 4.3), width_ratios=[1.15, 1])
+
+    # Left: trajectory, with the limits of the screen and the target
+    ax = axes["traj"]
+    ax.add_patch(Rectangle((-params["centerX"], params["centerY"] - params["screenHeight"]),
+                           params["screenWidth"], params["screenHeight"],
+                           fill=False, edgecolor="magenta", lw=1.5, label="screen"))
+    # Target for the cursor centre: yellow ring between r_min and r_max
+    ax.add_patch(Circle((0, 0), r_max, color="yellow", label="target"))
+    ax.add_patch(Circle((0, 0), r_min, color="white"))
+    ax.plot(x[idx][inside], y_up[idx][inside], ".", color="green", ms=1, label="inside")
+    ax.plot(x[idx][~inside], y_up[idx][~inside], ".", color="red", ms=2, label="outside")
+    ax.set_aspect("equal")
+    ax.invert_yaxis()
+    ax.set_xlabel("X (pixels)")
+    ax.set_ylabel("Y (pixels)")
+    ax.set_title(f"record {i}")
+    ax.legend(loc="upper right", fontsize=7)
+
+    # Right: x position, y position and target status against time
+    axes["x"].plot(time_s[idx], x[idx], color="blue", label="x")
+    axes["y"].plot(time_s[idx], y_up[idx], color="orange", label="y")
+    axes["inside"].plot(time_s[idx], in_target[idx], color="green", label="is_inside")
+    axes["x"].set_ylabel("X position")
+    axes["y"].set_ylabel("Y position")
+    axes["inside"].set_ylabel("Is inside")
+    axes["inside"].set_xlabel("Time (s)")
+    for name in ["x", "y", "inside"]:
+        axes[name].grid(True)
+        axes[name].legend(loc="upper right", fontsize=7)
+    for name in ["x", "y"]:
+        axes[name].sharex(axes["inside"])
+        axes[name].tick_params(labelbottom=False)
+
+    plt.tight_layout()
+    plt.show()
+```
