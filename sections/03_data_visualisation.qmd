@@ -65,3 +65,27 @@ def plot_record(i):
     plt.tight_layout()
     plt.show()
 ```
+## Reproducing the Assignment Figures
+
+### Mouse Position and Recording Intervals
+
+@fig-session-time shows the whole session on one time axis: the x and y positions of the cursor and whether it is inside the target (1) or not (0). Each recording is plotted separately: the cursor is not recorded during the pauses, so drawing a single line would join the end of one recording to the start of the next one.
+
+```{python}
+#| label: fig-session-time
+#| fig-cap: "Whole session: x and y position of the cursor relative to the centre of the track, and target status (1 = inside, 0 = outside), against time since the first sample."
+
+fig, ax = plt.subplots()
+for i in range(n_records):
+    idx = record_idx[i]
+    # Same colour for all the recordings, and only one legend entry per variable
+    ax.plot(time_s[idx], x[idx], color="C0", label="x position" if i == 0 else None)
+    ax.plot(time_s[idx], y_up[idx], color="C1", label="y position" if i == 0 else None)
+    ax.plot(time_s[idx], in_target[idx], color="C2", label="is inside target" if i == 0 else None)
+ax.set_xlabel("Time")
+ax.set_ylabel("Value")
+ax.legend()
+plt.show()
+```
+
+The session alternates 20 s of recording and 20 s of pause, as set by `cycleDuration`. During each recording, x and y oscillate between about −230 and +230 px: these are the two projections of a circular movement. The larger values at the very start of recordings 1 to 4 correspond to the cursor being brought back onto the track from wherever it was left during the pause. At this scale, the target status cannot be read: it is visible in the figures of each recording below. The number of samples, the duration and the sampling frequency of each recording, which the assignment prints at this point, were computed in Section 2.2.2 and are identical to the expected results.
