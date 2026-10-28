@@ -89,3 +89,28 @@ plt.show()
 ```
 
 The session alternates 20 s of recording and 20 s of pause, as set by `cycleDuration`. During each recording, x and y oscillate between about −230 and +230 px: these are the two projections of a circular movement. The larger values at the very start of recordings 1 to 4 correspond to the cursor being brought back onto the track from wherever it was left during the pause. At this scale, the target status cannot be read: it is visible in the figures of each recording below. The number of samples, the duration and the sampling frequency of each recording, which the assignment prints at this point, were computed in Section 2.2.2 and are identical to the expected results.
+### Mouse Trajectory and Circular Target
+
+@fig-session-trajectory shows the trajectory of the cursor during the whole session, with the target for the cursor centre (186 to 233 px from the centre). Because y points upwards, the figure is in the same orientation as what the participant saw on the screen.
+
+```{python}
+#| label: fig-session-trajectory
+#| fig-cap: "Trajectory of the cursor during the whole session. Green: samples inside the target. Red circles: limits of the target for the cursor centre (186 and 233 px)."
+
+inside = in_target == 1
+
+fig, ax = plt.subplots()
+ax.plot(x, y_up, label="trajectory")
+# zorder: draw the green samples above the trajectory, and the target above both
+ax.scatter(x[inside], y_up[inside], color="green", label="inside target", zorder=3)
+# Limits of the target for the cursor centre (only one legend entry)
+ax.add_patch(Circle((0, 0), r_max, fill=False, edgecolor="red", label="target", zorder=4))
+ax.add_patch(Circle((0, 0), r_min, fill=False, edgecolor="red", zorder=4))
+ax.set_aspect("equal")
+ax.set_xlabel("x position")
+ax.set_ylabel("y position")
+ax.legend(loc="center")
+plt.show()
+```
+
+The green samples fill exactly the band between the two red circles, which confirms that `mouseInTarget` corresponds to the position of the cursor *centre* between 186 and 233 px (this was checked numerically in Section 2.2.1). The blue lines outside the ring are the cursor coming onto the track at the start of the recordings, and the excursion of recording 0 on the left. Some straight lines also join the end of one recording to the start of the next one, because the samples of the whole session are drawn as a single line.
