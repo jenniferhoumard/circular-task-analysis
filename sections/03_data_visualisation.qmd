@@ -148,3 +148,9 @@ plot_record(3)
 #| fig-cap: "Recording 4. Left: trajectory, with the limits of the screen (magenta) and the target (yellow); green: inside the target, red: outside. Right: x position, y position and target status against time."
 plot_record(4)
 ```
+
+In every recording, x and y are two sinusoids shifted by a quarter of a period, as expected for a movement along a circle, with a period of about 1.3 to 1.8 s per lap. When x reaches its maximum (cursor on the right of the circle), y then decreases (the cursor goes down): the participant turned **clockwise**, which explains the negative number of laps (`nLaps`) in the marker table.
+
+The target status shows that the cursor is outside the target at the start of each recording, while it is brought onto the track (about 0.3 to 0.8 s after the first sample in recordings 1 to 4): these are the long red lines coming from the right of the trajectories. Recording 0 is different: the cursor is already inside the target when the recording starts, but it leaves it after about 0.1 s and only comes back after about 0.9 s (Section 2.3): this is the red loop on the left of its trajectory. After this first second, the cursor only leaves the target for short moments.
+
+The five trajectories have the same shape and stay well inside the screen. The red samples show that, when the participant leaves the target, it is almost always towards the outside of the circle. Recordings 0, 4 and 2 have the most samples outside the target, and recording 3 the fewest (`outside_pct`, Section 2.3).
