@@ -103,7 +103,10 @@ The session alternates 20 s of recording and 20 s of pause, as set by `cycleDura
 inside = in_target == 1
 
 fig, ax = plt.subplots()
-ax.plot(x, y_up, label="trajectory")
+# One line per recording, so that the recordings are not joined across the pauses
+for i in range(n_records):
+    idx = record_idx[i]
+    ax.plot(x[idx], y_up[idx], color="C0", label="trajectory" if i == 0 else None)
 # zorder: draw the green samples above the trajectory, and the target above both
 ax.scatter(x[inside], y_up[inside], color="green", label="inside target", zorder=3)
 # Limits of the target for the cursor centre (only one legend entry)
@@ -116,7 +119,7 @@ ax.legend(loc="center")
 plt.show()
 ```
 
-The green samples fill exactly the band between the two red circles, which confirms that `mouseInTarget` corresponds to the position of the cursor *centre* between 186 and 233 px (this was checked numerically in Section 2.2.1). The blue lines outside the ring are the cursor coming onto the track at the start of the recordings, and the excursion of recording 0 on the left. Some straight lines also join the end of one recording to the start of the next one, because the samples of the whole session are drawn as a single line.
+The green samples fill exactly the band between the two red circles, which confirms that `mouseInTarget` corresponds to the position of the cursor *centre* between 186 and 233 px (this was checked numerically in Section 2.2.1). The blue lines outside the ring are the cursor coming onto the track at the start of the recordings, and the excursion of recording 0 on the left. Each recording is drawn as a separate line, so that the end of one recording is not joined to the start of the next one across the pauses.
 
 ### Individual Recordings
 
