@@ -82,9 +82,11 @@ for i in range(n_records):
     ax.plot(time_s[idx], x[idx], color="C0", label="x position" if i == 0 else None)
     ax.plot(time_s[idx], y_up[idx], color="C1", label="y position" if i == 0 else None)
     ax.plot(time_s[idx], in_target[idx], color="C2", label="is inside target" if i == 0 else None)
-ax.set_xlabel("Time")
+ax.set_xlabel("Time (s)")
 ax.set_ylabel("Value")
-ax.legend()
+# Legend outside the plot, on the right, so that it does not hide the data
+ax.legend(loc="center left", bbox_to_anchor=(1.02, 0.5))
+plt.tight_layout()
 plt.show()
 ```
 
