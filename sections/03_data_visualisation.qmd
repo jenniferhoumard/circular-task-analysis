@@ -167,7 +167,7 @@ The trajectory plots show *where* the errors are, but not *when* they happen. Si
 
 ```{python}
 #| label: fig-radius-time
-#| fig-cap: "Distance between the cursor centre and the centre of the track during each recording. Shaded band: target for the cursor centre (186 to 233 px). Dotted line: ideal path (209.5 px). Red: samples outside the target. Values above 330 px (start of the recordings) are cut."
+#| fig-cap: "Distance between the cursor centre and the centre of the track during each recording. Shaded band: target for the cursor centre (186 to 233 px). Dotted line: ideal path (209.5 px). Red: samples outside the target. Red: samples outside the target."
 
 fig, axes = plt.subplots(n_records, 1, figsize=(10, 7), sharex=True, sharey=True)
 
@@ -183,7 +183,7 @@ for i in range(n_records):
     ax.plot(t_record[outside], r[idx][outside], ".", color="red", ms=2)
     ax.set_ylabel(f"recording {i}\nr (pixel)")
 
-axes[0].set_ylim(130, 330)
+axes[0].set_ylim(130, 450)
 axes[-1].set_xlabel("time since the start of the recording (s)")
 plt.tight_layout()
 plt.show()
