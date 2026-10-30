@@ -1,9 +1,27 @@
 
 ## Statistical Variables and Formulas
-xx
+
+The aim of the statistical analysis is to measure how well the participant performed the circular steering task. To know how many laps were completed, how accurately the cursor followed the target path, and how quickly the participant completed the task.
+
+MouseReMoCo calculates eight performance metrics for each recording and stores them in the marker file. However, the objective is to calculate these metrics independently using Python and compare the results with those provided by the software, MouseReMoCo.
+
+The eight measures are summarised below:
+
+| Variable | Name | What does it measure? | Unit |
+|---|---|---|---|
+| `nLaps` | Number of laps | Number and direction of laps completed around the circle. | laps |
+| `Re` | Effective radius | The radius of the participant's average cursor path. Shows how far the participant moved from the centre on average and whether the participant followed a path closer to the inner or outer boundary. | px |
+| `Te` | Effective tolerance | How the radial distance varies around the cursor's path. Shows how consistently the cursor followed the target path. A more consistent path will have a lower Te, indicating less variability in the cursor's path. | px |
+| `error` | Error percentage | Percentage of movement samples classified as outside the target | % |
+| `MT/lap` | Movement time per lap | Average time needed to complete one lap | s/lap |
+| `IDe/lap` | Effective index of difficulty | How difficult the movement was based on the participant's actual performance. | bits/lap |
+| `Be` | Effective tolerance ratio | Ratio comparing how much the radius of the cursor's path varied (Te) with the allowed track width(`taskTolerance`). A value above 1 indicates that the Te was larger than the allowed trackwidth.| dimensionless |
+| `IPe` | Index of Effective Performance | How efficiently the participant combined movement speed and accuracy. A higher value indicates better overall performance. | bits/s |
+
+The following sections describe how each metric is calculated from the raw mouse data and compared to the values provided by MouseReMoCo.
 
 ## Recalculating the Statistics
-xx
+
 
 ### Calculations for Each Recording
 xx
