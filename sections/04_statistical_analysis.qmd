@@ -22,6 +22,53 @@ The following sections describe how each metric is calculated from the raw mouse
 
 ## Recalculating the Statistics
 
+### Number of Laps (`nLaps`)
+
+**Objective:** Calculate the number of laps completed by the participant around the circular path.
+
+One complete lap corresponds to a rotation of 360 degrees or $2\pi$ radians
+
+The number of laps completed is calculated as:
+$${\boxed{nLaps=\frac{\Delta\theta}{2\pi}}$$
+
+where ($Delta\theta$) represents the total change in the cursor's angle around the center of the circle, measured in radians.
+
+As shown in @fig-cursor-angle, we know the cursor's x and y coordinates at each time point, so we can calculate the angle of the cursor relative to the center of the circle using the arctangent function:
+
+$$\boxed{\theta=\operatorname{atan2}(y_{\text{cursor}}-y_{\text{center}},\ x_{\text{cursor}}-x_{\text{center}})}$$
+
+![Cursor position and angle relative to the centre of the circular track.](figures/cursor_angle.png){#fig-cursor-angle width=50%}
+
+```{python}
+# 1. Calculate the number of laps completed by the participant
+
+# a) Create an empty list to store the number of laps for each recording
+calculated_laps = []
+
+# b) Loop through the 5 recordings
+for i in range(n_records): 
+    idx = record_idx[i] # get the indices of the samples belonging to each of the 5 recordings
+
+    # i. Calculate the cursor's angle at each point
+    angle = np.arctan2(y_up[idx], x[idx]) # angle in radians
+
+    # ii. Unwrap the angle to avoid artificial jumps between -pi and pi
+    angle = np.unwrap(angle)
+    # np.arctan2() returns angles betweenv(-pi) and (+pi). E.g., if the cursor crosses +pi, the angle will jump from +pi to -pi which is a jump. np.unwrap() removes these jumps by adding or subtracting a full rotation (2*pi) to the angle values.
+
+    # iii.Calculate the total change in angle
+    total_angle = angle[-1] - angle[0] # final angle minus intial angle (radians)
+
+    # iv. Calculate the number of laps completed
+    n_laps = total_angle / (2 * np.pi) 
+
+    # v. Append the number of laps to the list
+    calculated_laps.append(n_laps)
+
+    print(f"Recording {i+1}: Calculated number of laps = {n_laps:.2f}")
+```
+
+
 
 ### Calculations for Each Recording
 xx
