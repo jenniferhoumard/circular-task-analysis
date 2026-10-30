@@ -68,11 +68,40 @@ for i in range(n_records):
     print(f"Recording {i+1}: Calculated number of laps = {n_laps:.2f}")
 ```
 
+### Effective Radius (`Re`)
 
+The effective radius represents the average distance of the cursor from the center of the circular path during a recording. Since the radius 'r' was already calculated in Section 02, the `Re` can be calculated by taking the mean of these distances:
+
+$$\boxed{Re = \frac{1}{N} \sum_{i=1}^{N} r_i}$$
+
+where:
+
+- $r_i$ = the distance of the cursor from the center at each sample point
+
+- $N$ = total number of samples in the recording.
+
+```{python}
+
+# 2. Calculate the Re for each recording
+
+#a) Create an empty list to store the effective radius for each recording
+calculated_Re = []
+
+for i in range(n_records):
+    idx = record_idx[i] # get the indices of the samples belonging to each of the 5 recordings
+
+    # i. Calculate the Re
+    Re = np.mean(r[idx]) # mean distance from center
+
+    # ii. Append the Re to the list
+    calculated_Re.append(Re)
+
+    print(f"Recording {i+1}: Calculated Re = {Re:.2f} px")
+```
 
 ### Calculations for Each Recording
 xx
-
+No
 ### Summary Results Table
 xx
 
