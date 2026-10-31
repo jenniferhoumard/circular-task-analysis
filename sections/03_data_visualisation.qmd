@@ -1,12 +1,236 @@
 
+This section uses the variables created in Section 2: the parameters (`params`), the samples without the separator lines (`time_s`, `in_target`), the cursor position relative to the centre of the track (`x`, `y`), its distance to the centre (`r`) and the indices of the samples of each recording (`record_idx`, built from the `DoRecord` / `DoPause` events of the marker file).
+
+In Section 2, `y` keeps the screen orientation (y pointing downwards). The figures of the assignment use the opposite convention, with **y pointing upwards** (`centerY − mouseY`): for example, recording 1 starts at y ≈ −170 px in the assignment figures, while `y` = +170 px in our data. To reproduce the figures exactly, we therefore use `y_up = -y`.
+
+We also define a function that draws the two figures shown for each recording in the assignment, side by side, and a few values used in the accuracy figures at the end of the section:
+
+- `plot_record(i)`: on the left, the trajectory of recording *i* in the plane of the screen, with the limits of the screen (magenta), the target (yellow), and the samples inside (green) and outside (red) the target; on the right, the x position, y position and target status of recording *i* against time;
+- `r_min` and `r_max`: the limits of the band available for the cursor centre (186 and 233 px, see Section 2.2.1);
+- `record_start_s`: the start of each recording, in seconds since the first sample (same time axis as `time_s`).
+
+```{python}
+# y pointing upwards, as in the assignment figures
+y_up = -y
+
+# Limits for the cursor centre: the whole cursor must be inside the track
+r_min = params["internalRadius"] + params["cursorRadius"]                              # 186 px
+r_max = params["externalRadius"] - params["cursorRadius"] - params["borderRadius"]     # 233 px
+
+# Start of each recording, in seconds since the first sample (same time axis as time_s)
+record_start_s = (record_start_ms - time_ms[0]) / 1000
+
+
+def plot_record(i):
+    """Trajectory (left) and x, y, target status against time (right) of recording i."""
+    idx = record_idx[i]
+    inside = in_target[idx] == 1
+
+    # Layout: the trajectory takes the 3 rows on the left, one signal per row on the right
+    fig, axes = plt.subplot_mosaic([["traj", "x"], ["traj", "y"], ["traj", "inside"]],
+                                   figsize=(10, 4.3), width_ratios=[1.15, 1])
+
+    # Left: trajectory, with the limits of the screen and the target
+    ax = axes["traj"]
+    ax.add_patch(Rectangle((-params["centerX"], params["centerY"] - params["screenHeight"]),
+                           params["screenWidth"], params["screenHeight"],
+                           fill=False, edgecolor="magenta", lw=1.5, label="screen"))
+    # Target for the cursor centre: yellow ring between r_min and r_max
+    ax.add_patch(Circle((0, 0), r_max, color="yellow", label="target"))
+    ax.add_patch(Circle((0, 0), r_min, color="white"))
+    ax.plot(x[idx][inside], y_up[idx][inside], ".", color="green", ms=1, label="inside")
+    ax.plot(x[idx][~inside], y_up[idx][~inside], ".", color="red", ms=2, label="outside")
+    ax.set_aspect("equal")
+    ax.invert_yaxis()
+    ax.set_xlabel("X (pixels)")
+    ax.set_ylabel("Y (pixels)")
+    ax.set_title(f"record {i}")
+    ax.legend(loc="upper right", fontsize=7)
+
+    # Right: x position, y position and target status against time
+    axes["x"].plot(time_s[idx], x[idx], color="blue", label="x")
+    axes["y"].plot(time_s[idx], y_up[idx], color="orange", label="y")
+    axes["inside"].plot(time_s[idx], in_target[idx], color="green", label="is_inside")
+    axes["x"].set_ylabel("X position")
+    axes["y"].set_ylabel("Y position")
+    axes["inside"].set_ylabel("Is inside")
+    axes["inside"].set_xlabel("Time (s)")
+    for name in ["x", "y", "inside"]:
+        axes[name].grid(True)
+        axes[name].legend(loc="upper right", fontsize=7)
+    for name in ["x", "y"]:
+        axes[name].sharex(axes["inside"])
+        axes[name].tick_params(labelbottom=False)
+
+    plt.tight_layout()
+    plt.show()
+```
 ## Reproducing the Assignment Figures
-xx
 
 ### Mouse Position and Recording Intervals
-xx
+
+@fig-session-time shows the whole session on one time axis: the x and y positions of the cursor and whether it is inside the target (1) or not (0). Each recording is plotted separately: the cursor is not recorded during the pauses, so drawing a single line would join the end of one recording to the start of the next one.
+
+```{python}
+#| label: fig-session-time
+#| fig-cap: "Whole session: x and y position of the cursor relative to the centre of the track, and target status (1 = inside, 0 = outside), against time since the first sample."
+
+fig, ax = plt.subplots()
+for i in range(n_records):
+    idx = record_idx[i]
+    # Same colour for all the recordings, and only one legend entry per variable
+    ax.plot(time_s[idx], x[idx], color="C0", label="x position" if i == 0 else None)
+    ax.plot(time_s[idx], y_up[idx], color="C1", label="y position" if i == 0 else None)
+    ax.plot(time_s[idx], in_target[idx], color="C2", label="is inside target" if i == 0 else None)
+ax.set_xlabel("Time (s)")
+ax.set_ylabel("Value")
+# Legend outside the plot, on the right, so that it does not hide the data
+ax.legend(loc="center left", bbox_to_anchor=(1.02, 0.5))
+plt.tight_layout()
+plt.show()
+```
+
+The session alternates 20 s of recording and 20 s of pause, as set by `cycleDuration`. During each recording, x and y oscillate between about −230 and +230 px: these are the two projections of a circular movement. The larger values at the very start of recordings 1 to 4 correspond to the cursor being brought back onto the track from wherever it was left during the pause. At this scale, the target status cannot be read: it is visible in the figures of each recording below. The number of samples, the duration and the sampling frequency of each recording, which the assignment prints at this point, were computed in Section 2.2.2 and are identical to the expected results.
 
 ### Mouse Trajectory and Circular Target
-xx
+
+@fig-session-trajectory shows the trajectory of the cursor during the whole session, with the target for the cursor centre (186 to 233 px from the centre). Because y points upwards, the figure is in the same orientation as what the participant saw on the screen.
+
+```{python}
+#| label: fig-session-trajectory
+#| fig-cap: "Trajectory of the cursor during the whole session. Green: samples inside the target. Red circles: limits of the target for the cursor centre (186 and 233 px)."
+
+inside = in_target == 1
+
+fig, ax = plt.subplots()
+# One line per recording, so that the recordings are not joined across the pauses
+for i in range(n_records):
+    idx = record_idx[i]
+    ax.plot(x[idx], y_up[idx], color="C0", label="trajectory" if i == 0 else None)
+# zorder: draw the green samples above the trajectory, and the target above both
+ax.scatter(x[inside], y_up[inside], color="green", label="inside target", zorder=3)
+# Limits of the target for the cursor centre (only one legend entry)
+ax.add_patch(Circle((0, 0), r_max, fill=False, edgecolor="red", label="target", zorder=4))
+ax.add_patch(Circle((0, 0), r_min, fill=False, edgecolor="red", zorder=4))
+ax.set_aspect("equal")
+ax.set_xlabel("x position")
+ax.set_ylabel("y position")
+ax.legend(loc="center")
+plt.show()
+```
+
+The green samples fill exactly the band between the two red circles, which confirms that `mouseInTarget` corresponds to the position of the cursor *centre* between 186 and 233 px (this was checked numerically in Section 2.2.1). The blue lines outside the ring are the cursor coming onto the track at the start of the recordings, and the excursion of recording 0 on the left. Each recording is drawn as a separate line, so that the end of one recording is not joined to the start of the next one across the pauses.
+
+### Individual Recordings
+
+@fig-record-0 to @fig-record-4 show each recording, with its trajectory on the left and the corresponding signals on the right, so that each excursion outside the target (red) can be matched with the moment it happens. As in the assignment, the vertical axis of the trajectories is inverted (Y increases downwards).
+
+```{python}
+#| label: fig-record-0
+#| fig-cap: "Recording 0. Left: trajectory, with the limits of the screen (magenta) and the target (yellow); green: inside the target, red: outside. Right: x position, y position and target status against time."
+plot_record(0)
+```
+
+```{python}
+#| label: fig-record-1
+#| fig-cap: "Recording 1. Left: trajectory, with the limits of the screen (magenta) and the target (yellow); green: inside the target, red: outside. Right: x position, y position and target status against time."
+plot_record(1)
+```
+
+```{python}
+#| label: fig-record-2
+#| fig-cap: "Recording 2. Left: trajectory, with the limits of the screen (magenta) and the target (yellow); green: inside the target, red: outside. Right: x position, y position and target status against time."
+plot_record(2)
+```
+
+```{python}
+#| label: fig-record-3
+#| fig-cap: "Recording 3. Left: trajectory, with the limits of the screen (magenta) and the target (yellow); green: inside the target, red: outside. Right: x position, y position and target status against time."
+plot_record(3)
+```
+
+```{python}
+#| label: fig-record-4
+#| fig-cap: "Recording 4. Left: trajectory, with the limits of the screen (magenta) and the target (yellow); green: inside the target, red: outside. Right: x position, y position and target status against time."
+plot_record(4)
+```
+
+In every recording, x and y are two sinusoids shifted by a quarter of a period, as expected for a movement along a circle, with a period of about 1.3 to 1.8 s per lap. When x reaches its maximum (cursor on the right of the circle), y then decreases (the cursor goes down): the participant turned **clockwise**, which explains the negative number of laps (`nLaps`) in the marker table.
+
+The target status shows that the cursor is outside the target at the start of each recording, while it is brought onto the track (about 0.3 to 0.8 s after the first sample in recordings 1 to 4): these are the long red lines coming from the right of the trajectories. Recording 0 is different: the cursor is already inside the target when the recording starts, but it leaves it after about 0.1 s and only comes back after about 0.9 s (Section 2.3): this is the red loop on the left of its trajectory. After this first second, the cursor only leaves the target for short moments.
+
+The five trajectories have the same shape and stay well inside the screen. The red samples show that, when the participant leaves the target, it is almost always towards the outside of the circle. Recordings 0, 4 and 2 have the most samples outside the target, and recording 3 the fewest (`outside_pct`, Section 2.3).
 
 ## Visualising Movement Accuracy
-xx
+
+The trajectory plots show *where* the errors are, but not *when* they happen. Since the task is to stay on a circle, the natural measure of accuracy is the distance of the cursor centre to the centre of the track, `r`. @fig-radius-time shows `r` against time for each recording: the shaded band is the target for the cursor centre (186 to 233 px) and the dotted line is the ideal radius.
+
+```{python}
+#| label: fig-radius-time
+#| fig-cap: "Distance between the cursor centre and the centre of the track during each recording. Shaded band: target for the cursor centre (186 to 233 px). Dotted line: ideal path (209.5 px). Red: samples outside the target. Red: samples outside the target."
+
+fig, axes = plt.subplots(n_records, 1, figsize=(10, 7), sharex=True, sharey=True)
+
+for i in range(n_records):
+    idx = record_idx[i]
+    t_record = time_s[idx] - record_start_s[i]     # time since the start of the recording
+    outside = in_target[idx] == 0
+
+    ax = axes[i]
+    ax.axhspan(r_min, r_max, color="0.9", zorder=0)
+    ax.axhline(params["taskRadius"], color="0.4", ls=":", lw=1)
+    ax.plot(t_record, r[idx], color="C0", lw=0.6)
+    ax.plot(t_record[outside], r[idx][outside], ".", color="red", ms=2)
+    ax.set_ylabel(f"recording {i}\nr (pixel)")
+
+axes[0].set_ylim(130, 450)
+axes[-1].set_xlabel("time since the start of the recording (s)")
+plt.tight_layout()
+plt.show()
+```
+
+This figure shows that the errors are not spread evenly in time: a large part of them occur during the **first second** of each recording, as already noted in Section 2.3.
+
+- In recordings 1 to 4, the first samples are 310 to 420 px from the centre: the cursor is brought onto the track, which takes 0.3 to 0.8 s.
+- Recording 0 is different: the cursor is already on the track when the recording starts, but it leaves it almost immediately and goes up to about 370 px from the centre before coming back after about 0.9 s (Section 2.3).
+
+After this first second, the participant stays inside the band most of the time, with a few short excursions that are almost always towards the outside of the circle (r > 233 px).
+
+The variability of `r` is what MouseReMoCo uses to compute the effective tolerance `Te` (Section 4), so we checked how much this first second weighs on it. @fig-radius-sd compares the standard deviation of `r` in each recording computed (1) on all the samples, (2) from the first sample inside the target, which is where MouseReMoCo starts counting (Section 4), and (3) after the first second of the recording.
+
+```{python}
+#| label: fig-radius-sd
+#| fig-cap: "Standard deviation of the distance to the centre in each recording, depending on which samples are kept: all the samples, the samples from the first entry into the target, or the samples after the first second of the recording."
+
+sd_all = np.zeros(n_records)
+sd_after_entry = np.zeros(n_records)
+sd_after_1s = np.zeros(n_records)
+
+for i in range(n_records):
+    idx = record_idx[i]
+    t_record = time_s[idx] - record_start_s[i]
+    first_inside = np.argmax(in_target[idx] == 1)     # index of the first sample inside the target
+
+    sd_all[i] = np.std(r[idx])
+    sd_after_entry[i] = np.std(r[idx][first_inside:])
+    sd_after_1s[i] = np.std(r[idx][t_record > 1])
+
+fig, ax = plt.subplots(figsize=(8, 3.5))
+positions = np.arange(n_records)
+width = 0.26
+ax.bar(positions - width, sd_all, width * 0.92, color="#2a78d6", label="all samples")
+ax.bar(positions, sd_after_entry, width * 0.92, color="#eb6834", label="from the first entry into the target")
+ax.bar(positions + width, sd_after_1s, width * 0.92, color="#1baf7a", label="after the first second")
+ax.set_xticks(positions, [f"recording {i}" for i in range(n_records)])
+ax.set_ylabel("SD of r (pixel)")
+ax.legend(fontsize=8, loc="upper center", ncols=3, bbox_to_anchor=(0.5, 1.16), frameon=False)
+plt.tight_layout()
+plt.show()
+
+print("recording | SD of r (px)")
+print("          |  all samples | from first entry | after 1 s")
+for i in range(n_records):
+    print(f"{i:>9} | {sd_all[i]:>12.2f} | {sd_after_entry[i]:>16.2f} | {sd_after_1s[i]:>9.2f}")
+```
+
+Starting from the first entry into the target removes the approach phase of recordings 1 to 4: their standard deviation drops to 8–11 px and becomes almost identical to the one obtained after removing the first second. Recording 0 is the exception: since its first sample is already inside the target, nothing is removed, and its large excursion just after the start doubles its standard deviation (22.2 px instead of about 10 px after the first second). This is why `Te` is more than twice as large in recording 0 (91.79 px) as in the other recordings of the marker table: it reflects one excursion at the start of the recording rather than a less precise movement during the whole recording. The consequences for the statistics are discussed in Sections 4 and 6.
