@@ -99,9 +99,47 @@ for i in range(n_records):
     print(f"Recording {i+1}: Calculated Re = {Re:.2f} px")
 ```
 
+### Effective Tolerance (`Te`)
+
+`Te` measures how much the cursor's radius varies during a recording. It is calculated as the standard deviation of the cursor's radius. The standard deviation tells us how spread out the cursor's path is around the average radius. 
+
+$$\boxed{T_e=\sqrt{\frac{1}{N}\sum_{j=1}^{N}(r_j-R_e)^2}}$$
+
+where:
+
+- ($T_e$) = Effective Tolerance (px).
+
+- ($r_j$) = Cursor's distance from the centre at each recorded position (px).
+
+- ($R_e$) = Average radius of the cursor's path (px).
+
+- ($N$) = Number of recorded positions.
+
+A lower `Te` indicates that the cursor's path was more consistent and closer to the target path, while a higher `Te` suggests more variability in the cursor's movement.
+
+```{python}
+# 3. Calculate the Te for each recording
+
+# Create an empty list to store the Te for each recording
+calculated_Te = []
+
+for i in range(n_records):
+    idx = record_idx[i] # get the indices of the samples belonging to each of the 5 recordings
+
+    # i. Calculate the Te
+    Te = np.std(r[idx]) # standard deviation of the radius
+
+    # ii. Append the Te to the list
+    calculated_Te.append(Te)
+
+    print(f"Recording {i+1}: Calculated Te = {Te:.2f} px")
+
+```
+
 ### Calculations for Each Recording
-xx
-No
+
+
+
 ### Summary Results Table
 xx
 
