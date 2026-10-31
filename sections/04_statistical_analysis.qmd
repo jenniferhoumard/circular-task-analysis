@@ -178,49 +178,53 @@ In Section 02, we already created `in_target` which indicates whether the cursor
 calculated_error_sample = []
 calculated_error_angle = []
 
+# b). Find the first sample inside the target path 
+inside = in_target[idx] == 1 # creates a boolean array => 1 (inside) and 0 (outside)
+firs_inside = np.argmax(inside) # returns index of the first value inside the target 
+
 # b) Loop through the 5 recordings
 for i in range(n_records):
     idx = record_idx[i] # get the indices of the samples belonging to each of the 5 recordings
 
     # 4.1 Method 1: Sample-based Error %
 
-    # i. Identify the number of samples outside the target path for each recording
-    outside = in_target[1:] == 0 # creates a boolean array with 1 (inside) and 0 (outside)
-    N_outside = np.sum(outside) # count the number of samples outside the target path
+    # i. Exclude the initial approach to the target path
+    outside = in_target[idx][first_inside:] == 0 # creates a boolean array with 1 (inside) and 0 (outside)
 
-    # ii. Identify the total number of samples in the recording
+    # ii. Count outside and total samples
+    N_outside = np.sum(outside) # count samples outside the target path
     N_total = len(idx)
 
     # iii. Calculate the error percentage
     error_sample = (N_outside / N_total) * 100 
 
-    # iv. Append the error percentage to the list
+    # iv. Append the error % to the list
     calculated_error_sample.append(error_sample)
 
-    print(f"Recording {i+1}:")
-    print(f"Sample-based Error = {error_sample:.2f} %")
-    print(f"Number of samples outside the target path = {np.sum(N_outside)}")
-    print(f"Total number of samples in the recording = {N_total}")
-
     # 4.2 Method 2: Angle-based Error %
-    angle = recorded_angles[i] # retrieve the previously stored angles for each recording
 
-    # i. Calculate the change in angle between samples
-    angle_change = np.abs(np.diff(angle)) # avoids negative values
+    # i. Keep only the samples after entering the target
+    angle = recorded_angles[i][first_inside:] # keep only angles after entering the target
+    inside = inside[first_inside:] 
 
-    # ii. Calculate the angle travelled outside the target path
-    angle_outside = np.sum(angle_change[outside[idx][1:]]) # outside contains a boolean array indicating whether the cursor was outside or inside the target path. 
-    # [1:] is used to align angle_change with the outside array since angle_change has one less element than the original angle array. 
+    # ii. Calculate the signed angular change
+    angle_change = angle[:-1] - angle[1:] # positve value = clockwise rotation, negative = counter-clockwise rotation
+
+    # iii. Keep angular changes between -pi and +pi
+    angle_change = (angle_change + np.pi) % (2 * np.pi) - np.pi # wrap the angle changes between -pi and +pi
+
+    # iv. Calculate the angle travelled outside the target path
+    angle_outside = np.sum(angle_change[~inside[1:]]) # 
    
-   # iii. Calculate the total angle travelled during the recording
+   # v. Calculate the total angle travelled during the recording
     angle_total = (np.sum(angle_change))
 
-    # iv. Calculate the error %
+    # vi. Calculate the error %
     error_angle = (angle_outside / angle_total) * 100
 
-    # v. Append the error % and angle to the list
+    # vii. Append angle to the list
     calculated_error_angle.append(error_angle)
-
+    
     print(f"Recording {i+1}:")
     print(f"Sample-based Error = {error_sample:.2f} %")
     print(f"Angle-based Error = {error_angle:.2f} %")
