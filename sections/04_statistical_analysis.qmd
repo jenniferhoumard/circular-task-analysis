@@ -44,6 +44,7 @@ $$\boxed{\theta=\operatorname{atan2}(y_{\text{cursor}}-y_{\text{center}},\ x_{\t
 
 # a) Create an empty list to store the number of laps for each recording
 calculated_laps = []
+recorded_angles = []
 
 # b) Loop through the 5 recordings
 for i in range(n_records): 
@@ -62,10 +63,12 @@ for i in range(n_records):
     # iv. Calculate the number of laps completed
     n_laps = total_angle / (2 * np.pi) 
 
-    # v. Append the number of laps to the list
+    # v. Append the number of laps and angles to the list
     calculated_laps.append(n_laps)
+    recorded_angles.append(angle)
 
-    print(f"Recording {i+1}: Calculated number of laps = {n_laps:.2f}")
+    print(f"Recording {i+1}:")
+    print(f"Calculated number of laps = {n_laps:.2f}")
 ```
 
 ### Effective Radius (`Re`)
@@ -96,7 +99,8 @@ for i in range(n_records):
     # ii. Append the Re to the list
     calculated_Re.append(Re)
 
-    print(f"Recording {i+1}: Calculated Re = {Re:.2f} px")
+    print(f"Recording {i+1}:")
+    print(f"Calculated Re = {Re:.2f} px")
 ```
 
 ### Effective Tolerance (`Te`)
@@ -120,9 +124,10 @@ A lower `Te` indicates that the cursor's path was more consistent and closer to 
 ```{python}
 # 3. Calculate the Te for each recording
 
-# Create an empty list to store the Te for each recording
+# a) Create an empty list to store the Te for each recording
 calculated_Te = []
 
+# b) Loop through the 5 recordings
 for i in range(n_records):
     idx = record_idx[i] # get the indices of the samples belonging to each of the 5 recordings
 
@@ -132,9 +137,96 @@ for i in range(n_records):
     # ii. Append the Te to the list
     calculated_Te.append(Te)
 
-    print(f"Recording {i+1}: Calculated Te = {Te:.2f} px")
-
+    print(f"Recording {i+1}:")
+    print(f"Calculated Te = {Te:.2f} px")
 ```
+
+### Error Percentage (`error`)
+
+The error percentage measures how much the participant's cursor movement deviated from the circular target path during a recording. A lower percentage generally indicates better accuracy.
+
+The error is calculated using two different methods:
+
+| | Method 1: Sample-based | Method 2: Angle-based |
+|---|---|---|
+| **What does it measure?** | Percentage of recorded cursor positions outside the target. | Percentage of total angular movement occurring outside the target. |
+| **Formula** | $\frac{N_{\text{outside}}}{N_{\text{total}}}\times100$ | $\frac{\theta_{\text{outside}}}{\theta_{\text{total}}}\times100$ |
+| **What does it tell us?** | How often the cursor was recorded outside the target. | How much of the circular movement occurred outside the target. |
+| **Used by MouseReMoCo?** | No. | Yes, according to the software documentation. |
+
+
+$$\boxed{\text{Error(\%)} =\frac{N_{\text{outside}}}{N_{\text{total}}}\times100}$$
+
+$$\boxed{\text{Error(\%)} =\frac{\theta_{\text{outside}}}{\theta_{\text{total}}}\times100}$$
+
+
+The main difference is that Method 1 measures how often the cursor is outside the target, while Method 2 measures how much of the circular movement happened outside the target. 
+
+For example, if the cursor moves slowly outside the target, it will spend more time there, and with a constant sampling rate,more samples will be recorded. This will result in a higher error percentage for Method 1. If the cursor moves quickly outside the target, fewer samples will be recorded, resulting in a lower error percentage for Method 1.
+
+However, Method 2 will give the same error percentage regardless of how fast or slow the cursor moves outside the target, since it measures the total angular movement that happened outside the target instead of how many samples were recorded. One complete lap is 360 degrees. Let's say the cursor moves outside of the target for 90 degrees. Using Method 2, the angle-based error percentage will be 25% (90/360 * 100). However, using Method 1, if 60 samples were recorded outside of the target out of 100 total samples, the sample-based error percentage will be 60%.
+
+Therefore, both methods can produce different error percentages. The results of both methods are compared to determine how closley the angle-based method reproduces the values reported by MouseReMoCo. MouseReMoCo's documentation confirms that its error metric is angle-based. 
+
+In Section 02, we already created `in_target` which indicates whether the cursor was inside (1) or outside (0) the target path. We also previously created `recorded_angles` when calculating `nLaps` which contains the cursor's angle at each sample. Therefore, these variables can be reused to calculate the error percentage using both methods.
+
+```{python}
+
+# 4. Calculate the error % for each recording using Method 1 (sample-based) and Method 2 (angle-based)
+
+# a) Create empty lists to store the error % for each recording
+calculated_error_sample = []
+calculated_error_angle = []
+
+# b) Loop through the 5 recordings
+for i in range(n_records):
+    idx = record_idx[i] # get the indices of the samples belonging to each of the 5 recordings
+
+    # 4.1 Method 1: Sample-based Error %
+
+    # i. Identify the number of samples outside the target path for each recording
+    outside = in_target[1:] == 0 # creates a boolean array with 1 (inside) and 0 (outside)
+    N_outside = np.sum(outside) # count the number of samples outside the target path
+
+    # ii. Identify the total number of samples in the recording
+    N_total = len(idx)
+
+    # iii. Calculate the error percentage
+    error_sample = (N_outside / N_total) * 100 
+
+    # iv. Append the error percentage to the list
+    calculated_error_sample.append(error_sample)
+
+    print(f"Recording {i+1}:")
+    print(f"Sample-based Error = {error_sample:.2f} %")
+    print(f"Number of samples outside the target path = {np.sum(N_outside)}")
+    print(f"Total number of samples in the recording = {N_total}")
+
+    # 4.2 Method 2: Angle-based Error %
+    angle = recorded_angles[i] # retrieve the previously stored angles for each recording
+
+    # i. Calculate the change in angle between samples
+    angle_change = np.abs(np.diff(angle)) # avoids negative values
+
+    # ii. Calculate the angle travelled outside the target path
+    angle_outside = np.sum(angle_change[outside[idx][1:]]) # outside contains a boolean array indicating whether the cursor was outside or inside the target path. 
+    # [1:] is used to align angle_change with the outside array since angle_change has one less element than the original angle array. 
+   
+   # iii. Calculate the total angle travelled during the recording
+    angle_total = (np.sum(angle_change))
+
+    # iv. Calculate the error %
+    error_angle = (angle_outside / angle_total) * 100
+
+    # v. Append the error % and angle to the list
+    calculated_error_angle.append(error_angle)
+
+    print(f"Recording {i+1}:")
+    print(f"Sample-based Error = {error_sample:.2f} %")
+    print(f"Angle-based Error = {error_angle:.2f} %")
+```
+
+
 
 ### Calculations for Each Recording
 
