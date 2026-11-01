@@ -320,13 +320,13 @@ for i in range(n_records):
 | 4 | 1.49 | 1.49 | 
 | 5 | 1.30 | 1.30 | 
 
-The calculated MT/lap values matched MouseReMoCo's reported values for all five recordings, confirming the calculation sucessfully reproduces the software's results for this dataset. 
+The calculated `MT/lap` values matched MouseReMoCo's reported values for all five recordings, confirming the calculation sucessfully reproduces the software's results for this dataset. 
 
 The participant generally became faster across recordings, with Recording 4 being an exception. The average movement time decreased from 1.84s/lap in Recording 1 to 1.30s/lap in Recording 5. 
 
 ### Effective Index of Difficulty per Lap (`IDe/lap`)
 
-The effective index of difficulty per lap (IDe/lap) measures how difficult the circular movement was, based on the participant's actual cursor path. 
+The effective index of difficulty per lap (`IDe/lap`) measures how difficult the circular movement was, based on the participant's actual cursor path. 
 
 The difficulty depends on:
 
@@ -346,7 +346,7 @@ where:
 
 Following a circular path while keeping a consistent radius represents a greater effective movement difficulty. 
 
-Since `Re` and `Te` were already calculated, we can reuse these values to calculate the IDe/lap.
+Since `Re` and `Te` were already calculated, we can reuse these values to calculate the `IDe/lap`.
 
 ```{python}
 # 6. Calculate the IDe/lap for each recording
@@ -385,7 +385,64 @@ for i in range(n_records):
 
 The calculated IDe/lap values matched MouseReMoCo's reported values for all five recordings, confirming the calculation sucessfully reproduces the software's results for this dataset.
 
-Recording 2 has the highest IDe/lap value (38.27 bits/lap), while Recording 1 had the lowest (14.64 bit/lap). The low value in Recording 1 is likely due to the participant's larger Te, indicating greater variation in the cursor's radius. 
+Recording 2 has the highest IDe/lap value (38.27 bits/lap), while Recording 1 had the lowest (14.64 bit/lap). The low value in Recording 1 is likely due to the participant's larger `Te`, indicating greater variation in the cursor's radius. 
+
+### Effective Tolerance Ratio (`Be`)
+
+`Be` compares how much the cursor's radius varied (`Te`), with the allowed track width (`taskTolerance`) which is 47 px. 
+
+$$\boxed{B_e=\frac{T_e}{taskTolerance}}$$
+
+where: 
+
+- (`Te`) = Effective tolerance (px)
+- (`taskTolerance`) = Allowed track width (px)
+- (`Be`) = Effective tolerance ratio (dimensionless))
+
+`Be` indictes whether the Te is larger or smaller than the allowed track width. 
+
+| Be Value | Interpretation |
+|---|---|
+| Be > 1 | Te is larger than the allowed track width. |
+| Be = 1 | Te is equal to the allowed track width. |
+| Be < 1 | Te is smaller than the allowed track width.|
+
+A smaller `Be` indicates a more consistent cursor path relative to the allowed track width. However, it does not indicate whether the cursor stayed inside the target because it only compares the variability of the cursor's radius with the width of the target path. 
+
+```{python}
+# 7. Calculate the Be for each recording
+
+# a) Create an empty list to store the results
+calculated_Be = []
+
+# b) Loop through the 5 recordings
+for i in range(n_records):
+
+    # i. Retrieve the previously calculated Te
+    Te = calculated_Te[i]
+
+    # ii. Retrieve the task tolerance (px)
+    taskTolerance = params["taskTolerance"]
+
+    # iii. Calculate the Be
+    Be = Te / taskTolerance
+
+    # iv. Append the Be to the list
+    calculated_Be.append(Be)
+
+    print(f"Recording {i+1}:")
+    print(f"Calculated Be = {Be:.2f} (dimensionless)")
+```
+
+| Recording | Calculated Be (dimensionless) | MouseReMoCo Be (dimensionless) |
+|---|---:|---:|
+| 1 | 1.95 | 1.95 |
+| 2 | 0.73 | 0.73 |
+| 3 | 0.90 | 0.90 |
+| 4 | 0.79 | 0.79 |
+| 5 | 0.93 | 0.93 |
+
+The calculated `Be` values matched MouseReMoCo's reported values for all five recordings, confirming the calculation sucessfully reproduces the software's results for this dataset. Recording 1 had the highest `Be` value (1.95), indicating that the cursor's path varied more than the allowed track width. Recording 2 had the lowest `Be` value (0.73), indicating that the cursor's path was more consistent and varied less than the allowed track width.
 
 ### Calculations for Each Recording
 
