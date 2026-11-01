@@ -26,18 +26,28 @@ The following sections describe how each metric is calculated from the raw mouse
 
 **Objective:** Calculate the number of laps completed by the participant around the circular path.
 
-One complete lap corresponds to a rotation of 360 degrees or $2\pi$ radians
-
-The number of laps completed is calculated as:
-$${\boxed{nLaps=\frac{\Delta\theta}{2\pi}}$$
-
-where ($Delta\theta$) represents the total change in the cursor's angle around the center of the circle, measured in radians.
+One complete lap corresponds to a rotation of 360 degrees or $2\pi$ radians.
 
 As shown in @fig-cursor-angle, we know the cursor's x and y coordinates at each time point, so we can calculate the angle of the cursor relative to the center of the circle using the arctangent function:
 
-$$\boxed{\theta=\operatorname{atan2}(y_{\text{cursor}}-y_{\text{center}},\ x_{\text{cursor}}-x_{\text{center}})}$$
+$$\boxed{\theta = \operatorname{atan2}(y_{\text{cursor}}-y_{\text{center}},\ x_{\text{cursor}}-x_{\text{center}})}$$
 
 ![Cursor position and angle relative to the centre of the circular track.](figures/cursor_angle.png){#fig-cursor-angle width=50%}
+
+**Unwraping the angle**
+
+The arctangent function returns angles between -π and +π. If the cursor crosses the +π boundary, the angle will jump from +π to -π, which is an artificial jump, even though the cursor is moving continuously. To avoid this, `np.unwrap() is used to remove these jumps by adding or subtracting a full rotation (2π) to the angle values.
+
+The initial approach to the target is excluded and the angular change is calculated:
+
+$$\boxed{\theta_{final} - \theta_{initial}}$$
+
+Finally to calculate the `n_laps`, the angular change is divided by $2\pi$:
+
+$$\boxed{nLaps=\frac{\Delta\theta}{2\pi}}$$
+
+The sign indicates the direction of rotation. Negative indicates counter-clockwise rotation. 
+
 
 ```{python}
 # 1. Calculate the number of laps completed by the participant
@@ -50,26 +60,39 @@ recorded_angles = []
 for i in range(n_records): 
     idx = record_idx[i] # get the indices of the samples belonging to each of the 5 recordings
 
-    # i. Calculate the cursor's angle at each point
+    # i. Find the first sample inside the target
+    inside = in_target[idx] == 1 # creates a boolean array => 1 (inside) and 0 (outside)
+    first_inside = np.argmax(inside) # returns index of the first value inside the target
+
+    # ii. Calculate the cursor's angle at each point
     angle = np.arctan2(y_up[idx], x[idx]) # angle in radians
 
-    # ii. Unwrap the angle to avoid artificial jumps between -pi and pi
+    # iii. Unwrap the angle to avoid artificial jumps between -pi and pi
     angle = np.unwrap(angle)
     # np.arctan2() returns angles betweenv(-pi) and (+pi). E.g., if the cursor crosses +pi, the angle will jump from +pi to -pi which is a jump. np.unwrap() removes these jumps by adding or subtracting a full rotation (2*pi) to the angle values.
 
-    # iii.Calculate the total change in angle
-    total_angle = angle[-1] - angle[0] # final angle minus intial angle (radians)
+    # iv. Exclude initial approach
+    angle_record = angle[first_inside:] # keep only angles after entering the target
 
-    # iv. Calculate the number of laps completed
+    # v. Calculate change in angle between consecutive samples
+    angle_change = angle_record[:-1] - angle_record[1:] # positive value = clockwise rotation, negative = counter-clockwise rotation
+
+    # vi.Calculate the total change in angle
+    total_angle = angle_record[-1] - angle_record[0] # total change in angle (radians)
+
+    # vii. Calculate the number of laps completed
     n_laps = total_angle / (2 * np.pi) 
 
-    # v. Append the number of laps and angles to the list
+    # viii. Append the number of laps and angles to the list
     calculated_laps.append(n_laps)
     recorded_angles.append(angle)
 
     print(f"Recording {i+1}:")
     print(f"Calculated number of laps = {n_laps:.2f}")
 ```
+The calculated `nLaps` values matched MouseReMoCo's reported values for all five recordings, confirming the calculation sucessfully reproduces the software's results for this dataset.
+
+Recording 5 had the highest number of laps completed (14.74) while Recording 1 had the lowest (10.84). The negative sign indicates that the participant moved in a counter-clockwise direction around the circular track. The participant generally completed more laps across recordings, with Recording 4 being an exception.
 
 ### Effective Radius (`Re`)
 
@@ -500,14 +523,33 @@ Recording 1 had the lowest `Te`, mainly because the cursosr's radius varied much
 
 Although Recording 5 had the fastest movement time per lap (1.30 s/lap), it did not have the highest `IPe`. This shows that moving faster does not necessarily mean better overall performance because radial consistency also influences the `IPe`. Recordings 2-5 showed similar performance indices.
 
-
-
-### Calculations for Each Recording
-
-
-
 ### Summary Results Table
-xx
+
+To avoid using pandas to create a summary table, Python's built-in string formatting can be used to create a summary table. 
+
+```{python}
+
+# Create a summary table of the calculated metrics and MouseReMoCo's reported metrics
+
+# Print column header names
+print(f"{'Rec':<3} {'nLaps':>6} {'Re':>6} {'Te':>6} {'Error':>6} {'MT/lap':>6} {'IDe/lap':>6} {'Be':>6} {'IPe':>6}")
+
+# Print the calculated metrics for each recording
+for i in range(n_records):
+    print(f"{i+1:<3} "
+        f"{calculated_laps[i]:>6.2f} "
+        f"{calculated_Re[i]:>6.2f} "
+        f"{calculated_Te[i]:>6.2f} "
+        f"{calculated_error_angle[i]:>6.2f} "
+        f"{calculated_MT_lap[i]:>6.2f} "
+        f"{calculated_IDe_lap[i]:>6.2f} "
+        f"{calculated_Be[i]:>6.2f} "
+        f"{calculated_IPe[i]:>6.2f} "
+    )
+
+```
+
+
 
 ## Validation Against MouseReMoCo
 xx
