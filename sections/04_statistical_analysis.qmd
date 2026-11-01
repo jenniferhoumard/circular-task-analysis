@@ -201,12 +201,13 @@ The error is calculated using two different methods:
 | **What does it tell us?** | How often the cursor was recorded outside the target. | How much of the circular movement occurred outside the target. |
 | **Used by MouseReMoCo?** | No. | Yes, according to the software documentation. |
 
-
 $$\boxed{\text{Error(\%)} =\frac{N_{\text{outside}}}{N_{\text{total}}}\times100}$$
 
 $$\boxed{\text{Error(\%)} =\frac{\theta_{\text{outside}}}{\theta_{\text{total}}}\times100}$$
 
-The main difference is that Method 1 measures how often the cursor is outside the target, while Method 2 measures how much of the circular movement happened outside the target. 
+As shown in @fig-error-methods, the main difference is that Method 1 measures how often the cursor is outside the target, while Method 2 measures how much of the circular movement happened outside the target. 
+
+![Difference between sample-based and angle-based error percentage.](figures/cursor_error.png){#fig-error-methods width=50%}
 
 For example, if the cursor moves slowly outside the target, it will spend more time there, and with a constant sampling rate,more samples will be recorded. This will result in a higher error percentage for Method 1. If the cursor moves quickly outside the target, fewer samples will be recorded, resulting in a lower error percentage for Method 1.
 
@@ -546,10 +547,13 @@ for i in range(n_records):
         f"{calculated_Be[i]:>6.2f} "
         f"{calculated_IPe[i]:>6.2f} "
     )
-
 ```
 
+In conclusion, the performance metrics calculated using Python matched the values reported by MouseReMoCo for all five recordings. This confirms that the calculations successfully reproduce the software's results for this dataset. Excluding the initial approach to the target was an important step to obtain the same results as MouseReMoCo.
+
+Overall, the results show the importance of considering multiple metrics when evaluating the performance of a circular steering task. Although performance generally increased across recordings, we can not conclude that this improvement was due to motor learning. It could also reflect familiarization with the task, a change in movement strategy, or normal performance variability. Therefore, more recordings would be needed to determine whether a consistent learning effect occured. 
+
+Recording 1 had the lowest `IPe` (7.94 bits/s), associated with a slower lap time and greater variability in the cursor's path. Although Recording 5 had the fastest lap time (1.30 s/lap), Recording 2 achieved the highest `IPe` (24.04 bits/s), while Recording 4 had the lowest error % (0.13%). These findings show that the fastest movement, the most accurate movement, and the highest effective performance do not necessarily occur in the same recording.
 
 
-## Validation Against MouseReMoCo
-xx
+
