@@ -444,6 +444,64 @@ for i in range(n_records):
 
 The calculated `Be` values matched MouseReMoCo's reported values for all five recordings, confirming the calculation sucessfully reproduces the software's results for this dataset. Recording 1 had the highest `Be` value (1.95), indicating that the cursor's path varied more than the allowed track width. Recording 2 had the lowest `Be` value (0.73), indicating that the cursor's path was more consistent and varied less than the allowed track width.
 
+### Index of Effective Performance (`IPe`)
+
+The Index of Effective Performance (`IPe`) measures how efficiently the participant combined movement speed and accuracy while moving around the circular track. 
+
+It combines two metrics, `IDe/lap` and`MT/lap`:
+
+$$\boxed{IP_e=\frac{ID_e/lap}{MT/lap}}$$
+
+where:
+
+- IPe = Index of Effective Performance (bits/s)
+- IDe/lap = Effective index of difficulty per lap (bits/lap)
+- MT/lap = Average time to complete one lap (s/lap)
+
+A higher IPe generally indicates better overall performance, as it suggests that the participant was able to achieve a higher effective movement difficulty in less time. However, moving faster does not necessarily mean better performance if it comes at the cost of accuracy. 
+
+Since `IDe/lap` and `MT/lap` have been previously calculated, we can reuse these values to calculate the `IPe`.
+
+```{python}
+
+# 8. Calculate the IPe for each recording
+
+# a) Create an empty list to store the results
+calculated_IPe = []
+
+# b) Loop through the 5 recordings
+for i in range(n_records):
+    # i. Retrieve the previously calculated IDe/lap and MT/lap
+    IDe_lap = calculated_IDe_lap[i]
+    MT_lap = calculated_MT_lap[i]
+
+    # ii. Calculate the IPe
+    IPe = IDe_lap / MT_lap
+
+    # iii. Append the IPe to the list
+    calculated_IPe.append(IPe)
+
+    print(f"Recording {i+1}:")
+    print(f"Calculated IPe = {IPe:.2f} bits/s")
+
+```
+
+| Recording | Calculated IPe (bits/s) | MouseReMoCo IPe (bits/s) |
+|---|---:|---:|
+| 1 | 7.94 | 7.94 |
+| 2 | 24.04 | 24.04 |
+| 3 | 21.40 | 21.40 |
+| 4 | 23.72 | 23.72 |
+| 5 | 23.20 | 23.20 |
+
+The calculated `IPe` values matched MouseReMoCo's reported values for all five recordings, confirming the calculation sucessfully reproduces the software's results for this dataset. The `IPe` values was lowest in Recording 1 (7.94 bits/s) and highest in Recording 2 (24.04 bits/s). 
+
+Recording 1 had the lowest `Te`, mainly because the cursosr's radius varied much more than in the other recordings. This resulted in a larger `Te` and therefore a lower `IDe/lap`. The participant also took longer to complete each lap, which further reduced the `IPe`. 
+
+Although Recording 5 had the fastest movement time per lap (1.30 s/lap), it did not have the highest `IPe`. This shows that moving faster does not necessarily mean better overall performance because radial consistency also influences the `IPe`. Recordings 2-5 showed similar performance indices.
+
+
+
 ### Calculations for Each Recording
 
 
