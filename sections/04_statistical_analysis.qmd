@@ -91,12 +91,19 @@ where:
 calculated_Re = []
 
 for i in range(n_records):
-    idx = record_idx[i] # get the indices of the samples belonging to each of the 5 recordings
+    idx = record_idx[i]  # Get the indices of the samples belonging to each of the 5 recordings
+    
+    # i. Find the first sample inside the target
+    inside = in_target[idx] == 1
+    first_inside = np.argmax(inside)
 
-    # i. Calculate the Re
-    Re = np.mean(r[idx]) # mean distance from center
+    # ii. Select the radius values after entering the target
+    radius = r[idx][first_inside:]
 
-    # ii. Append the Re to the list
+    # iii. Calculate the Re after entering the target
+    Re = np.mean(radius) # mean distance from center
+
+    # iv. Append the Re to the list
     calculated_Re.append(Re)
 
     print(f"Recording {i+1}:")
@@ -107,17 +114,23 @@ for i in range(n_records):
 
 `Te` measures how much the cursor's radius varies during a recording. It is calculated as the standard deviation of the cursor's radius. The standard deviation tells us how spread out the cursor's path is around the average radius. 
 
-$$\boxed{T_e=\sqrt{\frac{1}{N}\sum_{j=1}^{N}(r_j-R_e)^2}}$$
+Standard deviation of the radius:
+$$\boxed{SD(r)=\sqrt{\frac{1}{N-1}\sum_{j=1}^{N}(r_j-R_e)^2}}$$
+
+where: 
+
+- ($r_j$) = Cursor's distance from the centre at each recorded position (px).
+- ($R_e$) = Average radius of the cursor's path (px).
+- ($N-1$) = Sample standard deviation uses N-1 in the denominator instead of N to provide a better estimate of the population standard deviation from a sample.
+
+$$\boxed{T_e=\sqrt{2\pi e}\times SD(r)}$$
 
 where:
 
 - ($T_e$) = Effective Tolerance (px).
+- ($e$) = Euler's number, approximately 2.71828.
 
-- ($r_j$) = Cursor's distance from the centre at each recorded position (px).
-
-- ($R_e$) = Average radius of the cursor's path (px).
-
-- ($N$) = Number of recorded positions.
+The factor $\sqrt{2\pi e}$ converts the standard deviation into an effective tolerance. We use N-1 because because we calculate the standard deviation from a sample using its estimated mean (Re) instead of the true population mean. This adjustment provides a more accurate estimate of the population standard deviation.
 
 A lower `Te` indicates that the cursor's path was more consistent and closer to the target path, while a higher `Te` suggests more variability in the cursor's movement.
 
@@ -131,10 +144,21 @@ calculated_Te = []
 for i in range(n_records):
     idx = record_idx[i] # get the indices of the samples belonging to each of the 5 recordings
 
-    # i. Calculate the Te
-    Te = np.std(r[idx]) # standard deviation of the radius
+    # i. Find the first sample inside the target
+    inside = in_target[idx] == 1
+    first_inside = np.argmax(inside)
 
-    # ii. Append the Te to the list
+    # ii. Select the radius values after entering the target
+    radius = r[idx][first_inside:]
+
+    # iii. Calculate the standard deviation of the radius
+    SD_r = np.std(radius, ddof=1) # (ddof=1) means use N-1 (sample standard deviation) instead of N (population standard deviation)
+
+    # iv. Calculate the Te after entering the target
+    Te = np.sqrt(2 * np.pi * np.e) * SD_r # (px)
+     # ddof=1 means N-1 is used in the denominator instead of N.
+
+    # v. Append the Te to the list
     calculated_Te.append(Te)
 
     print(f"Recording {i+1}:")
@@ -299,6 +323,69 @@ for i in range(n_records):
 The calculated MT/lap values matched MouseReMoCo's reported values for all five recordings, confirming the calculation sucessfully reproduces the software's results for this dataset. 
 
 The participant generally became faster across recordings, with Recording 4 being an exception. The average movement time decreased from 1.84s/lap in Recording 1 to 1.30s/lap in Recording 5. 
+
+### Effective Index of Difficulty per Lap (`IDe/lap`)
+
+The effective index of difficulty per lap (IDe/lap) measures how difficult the circular movement was, based on the participant's actual cursor path. 
+
+The difficulty depends on:
+
+- `Re` - Effective radius (px): The average radius of the cursor's path.
+
+- `Te` - Effective tolerance (px): How much the cursor's radius varies. 
+
+First the circumference of the average circular path using:
+$$C=2\pi r$ = 2\pi \times Re$$
+
+We then divide this by the effective tolerance.
+$$\boxed{ID_e/lap=\frac{2\pi R_e}{T_e}}$$
+
+where: 
+
+- $2\pi R_e$ = Circumference of the average circular path (px)
+
+Following a circular path while keeping a consistent radius represents a greater effective movement difficulty. 
+
+Since `Re` and `Te` were already calculated, we can reuse these values to calculate the IDe/lap.
+
+```{python}
+# 6. Calculate the IDe/lap for each recording
+
+# a) Create an empty list to store the results
+calculated_IDe_lap = []
+
+# b) Loop through the 5 recordings
+for i in range(n_records):
+
+    # i. Retrieve the previously calculated Re and Te
+    Re = calculated_Re[i]
+    Te = calculated_Te[i]
+
+    # ii. Calculate the average circumference of the cursor's path
+    circumference = 2 * np.pi * Re
+
+    # iii. Calculate the IDe/lap
+    IDe_lap = circumference / Te
+
+    # iv. Append the IDe/lap to the list
+    calculated_IDe_lap.append(IDe_lap)
+
+    print(f"Recording {i+1}:")
+    print(f"Calculated IDe/lap = {IDe_lap:.2f} bits/lap")
+
+```
+
+| Recording | Calculated IDe/lap (bits/lap) | MouseReMoCo IDe/lap (bits/lap) | 
+|---|---:|---:|---:|
+| 1 | 14.64 | 14.64 |
+| 2 | 38.27 | 38.27 | 
+| 3 | 31.02 | 31.02 | 
+| 4 | 35.43 | 35.43 |
+| 5 | 30.20 | 30.20 |
+
+The calculated IDe/lap values matched MouseReMoCo's reported values for all five recordings, confirming the calculation sucessfully reproduces the software's results for this dataset.
+
+Recording 2 has the highest IDe/lap value (38.27 bits/lap), while Recording 1 had the lowest (14.64 bit/lap). The low value in Recording 1 is likely due to the participant's larger Te, indicating greater variation in the cursor's radius. 
 
 ### Calculations for Each Recording
 
