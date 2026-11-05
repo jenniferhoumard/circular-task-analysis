@@ -65,11 +65,15 @@ for i in range(n_records):
 
 One complete lap corresponds to a rotation of 360 degrees or $2\pi$ radians.
 
-As shown in @fig-cursor-angle, we know the cursor's x and y coordinates at each time point, so we can calculate the angle of the cursor relative to the center of the circle using the arctangent function:
+As shown in @fig-cursor-angle, we know the cursor’s x and y coordinates at each time point, so we can calculate the angle of the cursor relative to the centre of the circle using the atan2 function. This function uses both the x and y coordinates to determine the correct quadrant of the angle. 
 
 $$\boxed{\theta = \operatorname{arctan2}(y_{\text{cursor}}-y_{\text{center}},\ x_{\text{cursor}}-x_{\text{center}})}$$
 
-![Cursor position and angle relative to the centre of the circular track.](figures/cursor_angle.png){#fig-cursor-angle width=90%}
+![Cursor position and angle relative to the centre of the circular track.](figures/cursor_angle.png){#fig-cursor-angle width=70%}
+
+For example, as shown in @fig-arctan2, if the cursor is at (100, 100), atan2 returns an angle of 45°, which is correct. However, if we used the ordinary arctangent function and the cursor was at the opposite position, (-100, -100), it would also return 45°, even though this point lies in a different quadrant of the circle. Therefore, atan2 is used because it takes into account the signs of both x and y coordinates, allowing the correct angle to be determined for all cursor positions around the circle.
+
+![Comparison between arctan and arctan2. The arctan2 function correctly determines the angle in all quadrants.](figures/arctan.png){#fig-arctan2 width=70%}
 
 **Unwraping the angle**
 
