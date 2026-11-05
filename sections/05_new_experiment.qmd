@@ -1,5 +1,27 @@
 ## Experimental Setup and Recording Procedure
-xx
+
+To check that our analysis also works on independently collected data, we recorded a new session with MouseReMoCo and analysed it with the same methods as the provided dataset.
+
+**Participant and equipment.** The recording was performed by one member of the group *(Sarah)*(right-handed), who had never performed the task before and did not do any practice trial. The task was performed on a MacBook Air M4 (13.6-inch screen, native resolution 2560 × 1664 pixels, displayed at 1470 × 956 points), using the built-in **trackpad** with the middle finger of the right (dominant) hand. The trackpad tracking speed was set to its maximum in the macOS settings. The participant was lying on a sofa with the laptop on her lap.
+
+**Software and settings.** We used MouseReMoCo version 1.3.0 (Java 8), launched from the terminal with the same task settings as the provided dataset:
+
+```bash
+java -jar mouseReMoCo1.3.0.jar -task circular -cycleMaxNumber 6 -cycleDuration 20 -externalRadius 250 -internalRadius 170
+```
+
+The other parameters (cursor radius 16 px, border 1 px, colours) were left at their default values, which are identical to those of the provided dataset. The geometry of the track is therefore the same in pixels: `taskRadius` = 209.5 px, `taskTolerance` = 47 px and `indexOfDifficulty` ≈ 28.0. On this screen, one pixel measures about 0.20 mm (13.6-inch diagonal for 1470 × 956 points), so the outer circle has a radius of about 4.9 cm and the track is about 9.3 mm wide.
+
+**Procedure.** After the window opened, the cursor was placed on the track and the timed sequence was started with the space bar. The software then alternated automatically 6 recordings of 20 s (red cursor) and 6 pauses of 20 s (yellow cursor). During each recording, the participant moved the cursor around the track as fast as possible while trying to stay inside it, always in the clockwise direction. After the 6th recording, the window was closed with the `q` key. No incident occurred during the session. The two files produced by MouseReMoCo (`data.csv` and `marker.csv`) were renamed and stored in the `data/` folder as `002SaDu_R1.csv` and `002SaDu_R1.marker.csv`.
+
+**Differences with the provided dataset.** Although the task settings are identical, several conditions differ from the provided recording and should be kept in mind when comparing the results:
+
+- **Input device:** a trackpad set to its maximum speed, so that a small finger movement produces a large cursor movement, which can make accurate control more difficult. The device used for the provided dataset is not documented in the files.
+- **Posture:** lying on a sofa, which is less stable than sitting at a desk.
+- **Experience:** this was the participant's first contact with the task.
+- **Screen:** the track has the same size in pixels, but its physical size may differ, since the screen of the provided dataset is not documented.
+- **Software version:** 1.3.0 instead of 1.2.0rc5.
+- **Number of recordings:** the 6 planned recordings were completed, whereas the provided dataset only contains 5.
 
 ## Importing the New Dataset
 xx
