@@ -24,7 +24,137 @@ The other parameters (cursor radius 16 px, border 1 px, colours) were left at th
 - **Number of recordings:** the 6 planned recordings were completed, whereas the provided dataset only contains 5.
 
 ## Importing the New Dataset
-xx
+
+In Section 2, the provided files were read step by step, and the results were stored in variables such as `params`, `x`, `y` or `record_idx`. Running the same code on the new files would overwrite these variables, which are still needed in the other sections. We therefore gathered all the import steps of Section 2 into a single function, `load_session()`, which takes the paths of the two files of a session and returns all the results in a dictionary. The same function can then be applied to any MouseReMoCo recording.
+
+```{python}
+def load_session(data_file, marker_file):
+    """Read a MouseReMoCo session (raw movement file + marker file)
+    and return its content in a dictionary (same steps as in Section 2)."""
+
+    # 1. Parameters: first line of the raw movement file
+    with open(data_file) as f:
+        first_line = f.readline().strip()
+    params = {}
+    for item in first_line.split(";"):
+        name, value = item.split(" ", 1)
+        try:
+            value = float(value)      # numerical parameter
+        except ValueError:
+            pass                      # non-numerical parameter: kept as text
+        params[name] = value
+
+    # 2. Samples: skip the 4 header lines and remove the "0,0,0,0" separator lines
+    data = np.loadtxt(data_file, delimiter=",", skiprows=4, dtype=np.int64)
+    n_separators = np.sum(data[:, 0] == 0)
+    data = data[data[:, 0] != 0]
+    time_ms = data[:, 0]
+    mouse_x = data[:, 1]
+    mouse_y = data[:, 2]
+    in_target = data[:, 3]
+
+    # 3. Marker file: start and end of each recording, and summary table
+    with open(marker_file) as f:
+        marker_lines = f.readlines()
+    record_start_ms, record_end_ms, marker_results = [], [], []
+    for line in marker_lines:
+        if "DoCycleChange:DoRecord" in line:
+            record_start_ms.append(int(line.split(",")[1]))
+        elif "DoCycleChange:DoPause" in line:
+            record_end_ms.append(int(line.split(",")[1]))
+        row = line.strip()
+        if row.startswith("Var"):
+            marker_names = [name.strip().replace("/", "_") for name in row.split(",")[1:9]]
+        elif row.startswith("Theory"):
+            marker_theory = np.array([float(v) if v.strip() else np.nan
+                                      for v in row.split(",")[1:9]])
+        elif row.startswith("Rec"):
+            marker_results.append([float(v) for v in row.split(",")[1:9]])
+
+    record_start_ms = np.array(record_start_ms)
+    record_end_ms = np.array(record_end_ms)
+    n_records = len(record_start_ms)
+    # If the window was closed during the last recording, it has no DoPause event:
+    # its end is then the last sample
+    if len(record_end_ms) < n_records:
+        record_end_ms = np.append(record_end_ms, time_ms[-1])
+    marker_results = np.array(marker_results)[:n_records]
+
+    # 4. Derived variables (same definitions as in Section 2)
+    x = mouse_x - params["centerX"]
+    y = mouse_y - params["centerY"]
+    r = np.sqrt(x**2 + y**2)
+    time_s = (time_ms - time_ms[0]) / 1000
+    record_idx = [np.where((time_ms >= record_start_ms[i]) & (time_ms <= record_end_ms[i]))[0]
+                  for i in range(n_records)]
+
+    return {"params": params, "n_separators": n_separators,
+            "time_ms": time_ms, "time_s": time_s,
+            "mouse_x": mouse_x, "mouse_y": mouse_y, "in_target": in_target,
+            "x": x, "y": y, "r": r,
+            "record_start_ms": record_start_ms, "record_end_ms": record_end_ms,
+            "n_records": n_records, "record_idx": record_idx,
+            "marker_names": marker_names, "marker_theory": marker_theory,
+            "marker_results": marker_results}
+```
+
+To check that the function is correct, we first apply it to the provided files and compare its results with the variables computed step by step in Section 2.
+
+```{python}
+provided = load_session(data_file, marker_file)
+
+checks = {
+    "params": provided["params"] == params,
+    "time_ms": np.array_equal(provided["time_ms"], time_ms),
+    "x": np.array_equal(provided["x"], x),
+    "y": np.array_equal(provided["y"], y),
+    "in_target": np.array_equal(provided["in_target"], in_target),
+    "record_idx": all(np.array_equal(a, b) for a, b in zip(provided["record_idx"], record_idx)),
+    "marker_results": np.array_equal(provided["marker_results"], marker_results),
+}
+for name, ok in checks.items():
+    print(f"{name:<15} identical to Section 2: {ok}")
+```
+
+All the results are identical, so the function reproduces Section 2 exactly. We then apply it to the new recording.
+
+```{python}
+new = load_session("data/002SaDu_R1.csv", "data/002SaDu_R1.marker.csv")
+
+print("Separator lines removed:", new["n_separators"])
+print("Number of samples:", len(new["time_ms"]))
+print(f"Session duration: {new['time_s'][-1]:.2f} s")
+print("Number of recordings:", new["n_records"])
+print()
+for i in range(new["n_records"]):
+    idx = new["record_idx"][i]
+    duration_s = (new["time_ms"][idx[-1]] - new["time_ms"][idx[0]]) / 1000
+    print(f"record {i}: {len(idx)} samples in {duration_s:.2f} s "
+          f"({(len(idx) - 1) / duration_s:.2f} Hz)")
+```
+
+The new file contains more samples than the 6 recordings: we checked where the extra samples are located.
+
+```{python}
+t = new["time_ms"]
+in_rec = np.zeros(len(t), dtype=bool)
+for idx in new["record_idx"]:
+    in_rec[idx] = True
+
+n_outside = np.sum(~in_rec)
+n_before = np.sum(t < new["record_start_ms"][0])
+n_after = np.sum(t > new["record_end_ms"][-1])
+
+print("Samples outside the recordings:", n_outside)
+print("  before the first recording:", n_before)
+print("  during the pauses between recordings:", n_outside - n_before - n_after)
+print("  after the last recording:", n_after)
+print(f"First sample after the start of recording 0: {(t[0] - new['record_start_ms'][0]) / 1000:.3f} s")
+```
+
+Unlike the provided file (where only one sample was outside the recordings), 452 samples of the new file were recorded **during the pauses**, including the last one, which ended when the window was closed. This difference comes from the software version: MouseReMoCo 1.3.0, used for the new recording, saves the data during the pauses ("data should be saved during pause", issue #15 in the [release notes](https://github.com/DenisMot/mouseReMoCo/releases/tag/v1.3.0-release)), whereas version 1.2.0rc5, used for the provided dataset, did not. Because the recordings are selected using the `DoRecord` and `DoPause` events of the marker file, these samples are automatically excluded from the analysis.
+
+The new recording also has a lower sampling frequency (about 120 Hz instead of about 199 Hz), which confirms that MouseReMoCo records a sample at each mouse event rather than at a fixed rate (Section 2.3): the rate depends on the input device, here a trackpad.
 
 ## Results and Validation
 xx
