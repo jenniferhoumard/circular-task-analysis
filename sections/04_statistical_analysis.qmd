@@ -1,5 +1,5 @@
 
-## Statistical Variables and Formulas
+## Statistical Variables Overview
 
 The aim of the statistical analysis is to measure how well the participant performed the circular steering task. To know how many laps were completed, how accurately the cursor followed the target path, and how quickly the participant completed the task.
 
@@ -18,9 +18,46 @@ The eight measures are summarised below:
 | `Be` | Effective tolerance ratio | Ratio comparing how much the radius of the cursor's path varied (Te) with the allowed track width(`taskTolerance`). A value above 1 indicates that the Te was larger than the allowed trackwidth.| dimensionless |
 | `IPe` | Index of Effective Performance | How efficiently the participant combined movement speed and accuracy. A higher value indicates better overall performance. | bits/s |
 
+: {tbl-colwidths="[12,22,54,12]"}
+
 The following sections describe how each metric is calculated from the raw mouse data and compared to the values provided by MouseReMoCo.
 
 ## Recalculating the Statistics
+
+Initially we performed the calculations using the recording boundaries defined in Section 02. However, when comparing the results with MouseReMoCo, we observed small differences of 0.01 in some metrics for Recording 1.
+
+After investigating these differences, we noticed that the first mouse sample of Recording 1 was recorded 4 ms before the start marker (`DoRecord`). 
+
+As explained in Section 02, this sample was initially excluded because the recordings were selected using the start and end marker timestamps. However, to reproduce MouseReMoCo's results, we decided to include this sample in the analysis because a single additional sample can slightly change the mean radius, standard deviation, and number of laps. With this adjustment, the calculated metrics matched those reported by MouseReMoCo to two decimal places. 
+
+We also identified the first sample where the cursor enters the target path for each recording, and only kept the samples from this point onwards were kept for analysis. This removes the initial approach to the target so that it does not influence the results. Finally, the indices of the remaining samples are then stored including those inside and outside the target, to reuse them in later calculations.  
+
+The data preparation performed before statistical analysis is shown below:
+
+```{python}
+record_data = [] # create an empty list to store the indices of samples after entering the target
+
+for i in range(n_records):
+    idx = record_idx[i] # get the indices of the samples after entering the target path
+
+    # i. Include the first mouse sample of Recording 1 (4 ms before DoRecord)
+    if i == 0: # only perform this correction if i is equal to Recording 1
+        previous_idx = idx[0] - 1 # get the index of the previous sample (4 ms sample)
+        idx = np.insert(idx, 0, previous_idx) # add this index at the beginning of the array
+
+    # ii. Find the first sample inside the target path
+    inside = in_target[idx] == 1 # Boolean array: True = inside, False = outside
+    first_inside = np.argmax(inside) # returns the index of the first value inside the target 
+
+    # iii.Keep only the samples after entering the target path
+    idx = idx[first_inside:]
+
+    # iv. Store the indices for later calculations
+    record_data.append(idx)
+
+```
+
+
 
 ### Number of Laps (`nLaps`)
 
@@ -30,9 +67,9 @@ One complete lap corresponds to a rotation of 360 degrees or $2\pi$ radians.
 
 As shown in @fig-cursor-angle, we know the cursor's x and y coordinates at each time point, so we can calculate the angle of the cursor relative to the center of the circle using the arctangent function:
 
-$$\boxed{\theta = \operatorname{atan2}(y_{\text{cursor}}-y_{\text{center}},\ x_{\text{cursor}}-x_{\text{center}})}$$
+$$\boxed{\theta = \operatorname{arctan2}(y_{\text{cursor}}-y_{\text{center}},\ x_{\text{cursor}}-x_{\text{center}})}$$
 
-![Cursor position and angle relative to the centre of the circular track.](figures/cursor_angle.png){#fig-cursor-angle width=50%}
+![Cursor position and angle relative to the centre of the circular track.](figures/cursor_angle.png){#fig-cursor-angle width=90%}
 
 **Unwraping the angle**
 
@@ -40,13 +77,13 @@ The arctangent function returns angles between -π and +π. If the cursor crosse
 
 The initial approach to the target is excluded and the angular change is calculated:
 
-$$\boxed{\theta_{final} - \theta_{initial}}$$
+$$\boxed{\Delta\theta =\theta_{final} - \theta_{initial}}$$
 
 Finally to calculate the `n_laps`, the angular change is divided by $2\pi$:
 
 $$\boxed{nLaps=\frac{\Delta\theta}{2\pi}}$$
 
-The sign indicates the direction of rotation. Negative indicates counter-clockwise rotation. 
+The sign indicates the direction of rotation. Negative values indicate clock-wise rotation, while positive values indicate counter-clockwise rotation. 
 
 
 ```{python}
@@ -58,41 +95,31 @@ recorded_angles = []
 
 # b) Loop through the 5 recordings
 for i in range(n_records): 
-    idx = record_idx[i] # get the indices of the samples belonging to each of the 5 recordings
+    idx = record_data[i] # get the indices of the samples after entering the target path
 
-    # i. Find the first sample inside the target
-    inside = in_target[idx] == 1 # creates a boolean array => 1 (inside) and 0 (outside)
-    first_inside = np.argmax(inside) # returns index of the first value inside the target
-
-    # ii. Calculate the cursor's angle at each point
+    # i. Calculate the cursor's angle at each point
     angle = np.arctan2(y_up[idx], x[idx]) # angle in radians
 
-    # iii. Unwrap the angle to avoid artificial jumps between -pi and pi
-    angle = np.unwrap(angle)
-    # np.arctan2() returns angles betweenv(-pi) and (+pi). E.g., if the cursor crosses +pi, the angle will jump from +pi to -pi which is a jump. np.unwrap() removes these jumps by adding or subtracting a full rotation (2*pi) to the angle values.
+    # ii. Unwrap the angle to avoid artificial jumps between -pi and pi
+    angle = np.unwrap(angle) # np.arctan2() returns angles betweenv(-pi) and (+pi). 
 
-    # iv. Exclude initial approach
-    angle_record = angle[first_inside:] # keep only angles after entering the target
+    # iii.Calculate the total change in angle
+    total_angle = angle[-1] - angle[0] # total change in angle (radians)
 
-    # v. Calculate change in angle between consecutive samples
-    angle_change = angle_record[:-1] - angle_record[1:] # positive value = clockwise rotation, negative = counter-clockwise rotation
-
-    # vi.Calculate the total change in angle
-    total_angle = angle_record[-1] - angle_record[0] # total change in angle (radians)
-
-    # vii. Calculate the number of laps completed
+    # iv. Calculate the number of laps completed
     n_laps = total_angle / (2 * np.pi) 
 
-    # viii. Append the number of laps and angles to the list
+    # v. Append the number of laps and angles to the list
     calculated_laps.append(n_laps)
     recorded_angles.append(angle)
 
     print(f"Recording {i+1}:")
     print(f"Calculated number of laps = {n_laps:.2f}")
 ```
+
 The calculated `nLaps` values matched MouseReMoCo's reported values for all five recordings, confirming the calculation sucessfully reproduces the software's results for this dataset.
 
-Recording 5 had the highest number of laps completed (14.74) while Recording 1 had the lowest (10.84). The negative sign indicates that the participant moved in a counter-clockwise direction around the circular track. The participant generally completed more laps across recordings, with Recording 4 being an exception.
+Recording 5 had the highest number of laps completed (14.74) while Recording 1 had the lowest (10.85). The negative sign indicates that the participant moved in a clockwise direction around the circular track. The participant generally completed more laps across recordings, with Recording 4 being an exception.
 
 ### Effective Radius (`Re`)
 
@@ -107,26 +134,21 @@ where:
 - $N$ = total number of samples in the recording.
 
 ```{python}
-
 # 2. Calculate the Re for each recording
 
 #a) Create an empty list to store the effective radius for each recording
 calculated_Re = []
 
 for i in range(n_records):
-    idx = record_idx[i]  # Get the indices of the samples belonging to each of the 5 recordings
-    
-    # i. Find the first sample inside the target
-    inside = in_target[idx] == 1
-    first_inside = np.argmax(inside)
+    idx = record_data[i]  # get the indices of the samples after entering the target path
 
-    # ii. Select the radius values after entering the target
-    radius = r[idx][first_inside:]
+    # i. Select the radius values after entering the target
+    radius = r[idx]
 
-    # iii. Calculate the Re after entering the target
+    # ii. Calculate the Re after entering the target
     Re = np.mean(radius) # mean distance from center
 
-    # iv. Append the Re to the list
+    # iii. Append the Re to the list
     calculated_Re.append(Re)
 
     print(f"Recording {i+1}:")
@@ -153,7 +175,7 @@ where:
 - ($T_e$) = Effective Tolerance (px).
 - ($e$) = Euler's number, approximately 2.71828.
 
-The factor $\sqrt{2\pi e}$ converts the standard deviation into an effective tolerance. We use N-1 because because we calculate the standard deviation from a sample using its estimated mean (Re) instead of the true population mean. This adjustment provides a more accurate estimate of the population standard deviation.
+The factor $\sqrt{2\pi e}$ converts the standard deviation into an effective tolerance. We use N-1 because we calculate the standard deviation from a sample using its estimated mean (Re) instead of the true population mean. This adjustment provides a more accurate estimate of the population standard deviation.
 
 A lower `Te` indicates that the cursor's path was more consistent and closer to the target path, while a higher `Te` suggests more variability in the cursor's movement.
 
@@ -165,23 +187,18 @@ calculated_Te = []
 
 # b) Loop through the 5 recordings
 for i in range(n_records):
-    idx = record_idx[i] # get the indices of the samples belonging to each of the 5 recordings
+    idx = record_data[i] # get the indices of the samples after entering the target path
 
-    # i. Find the first sample inside the target
-    inside = in_target[idx] == 1
-    first_inside = np.argmax(inside)
+    # i. Select the radius values after entering the target
+    radius = r[idx]
 
-    # ii. Select the radius values after entering the target
-    radius = r[idx][first_inside:]
-
-    # iii. Calculate the standard deviation of the radius
+    # ii. Calculate the standard deviation of the radius
     SD_r = np.std(radius, ddof=1) # (ddof=1) means use N-1 (sample standard deviation) instead of N (population standard deviation)
 
-    # iv. Calculate the Te after entering the target
+    # iii. Calculate the Te after entering the target
     Te = np.sqrt(2 * np.pi * np.e) * SD_r # (px)
-     # ddof=1 means N-1 is used in the denominator instead of N.
 
-    # v. Append the Te to the list
+    # iv. Append the Te to the list
     calculated_Te.append(Te)
 
     print(f"Recording {i+1}:")
@@ -189,8 +206,6 @@ for i in range(n_records):
 ```
 
 ### Error Percentage (`error`)
-
-The error percentage measures how much the participant's cursor movement deviated from the circular target path during a recording. A lower percentage generally indicates better accuracy.
 
 The error is calculated using two different methods:
 
@@ -201,13 +216,15 @@ The error is calculated using two different methods:
 | **What does it tell us?** | How often the cursor was recorded outside the target. | How much of the circular movement occurred outside the target. |
 | **Used by MouseReMoCo?** | No. | Yes, according to the software documentation. |
 
+The error percentage according to MouseReMoCo is measured using a angle-based method that measures the percentage of total angular movement occurring outside the target. A lower percentage generally indicates better accuracy.
+
 $$\boxed{\text{Error(\%)} =\frac{N_{\text{outside}}}{N_{\text{total}}}\times100}$$
 
 $$\boxed{\text{Error(\%)} =\frac{\theta_{\text{outside}}}{\theta_{\text{total}}}\times100}$$
 
 As shown in @fig-error-methods, the main difference is that Method 1 measures how often the cursor is outside the target, while Method 2 measures how much of the circular movement happened outside the target. 
 
-![Difference between sample-based and angle-based error percentage.](figures/cursor_error.png){#fig-error-methods width=50%}
+![Difference between sample-based and angle-based error percentage.](figures/cursor_error.png){#fig-error-methods width=90%}
 
 For example, if the cursor moves slowly outside the target, it will spend more time there, and with a constant sampling rate,more samples will be recorded. This will result in a higher error percentage for Method 1. If the cursor moves quickly outside the target, fewer samples will be recorded, resulting in a lower error percentage for Method 1.
 
@@ -215,11 +232,11 @@ However, Method 2 will give the same error percentage regardless of how fast or 
 
 Therefore, both methods can produce different error percentages, depending on how the cursor's movement speed varies inside and outside the target. However, if the proportion of samples recorded outside the target is similar to the proportion of angular movement outside, the results of both methods will also be similar. MouseReMoCo's documentation confirms that its error metric is angle-based. 
 
-In Section 02, we already created `in_target` which indicates whether the cursor was inside (1) or outside (0) the target path. We also previously created `recorded_angles` when calculating `nLaps` which contains the cursor's angle at each sample. Therefore, these variables can be reused to calculate the error percentage using both methods.
+In Section 02, we already created `in_target` which indicates whether the cursor was inside (1) or outside (0) the target path. We also previously created `recorded_angles` when calculating `nLaps` which contains the cursor's angle at each sample and are already unwrapped. Therefore, these variables can be reused to calculate the error percentage using both methods.
 
 ```{python}
 
-# 4. Calculate the error % for each recording using Method 1 (sample-based) and Method 2 (angle-based)
+# 4. Calculate the error % using Method 1 (sample-based) and Method 2 (angle-based)
 
 # a) Create empty lists to store the error % for each recording
 calculated_error_sample = []
@@ -227,20 +244,17 @@ calculated_error_angle = []
 
 # b) Loop through the 5 recordings
 for i in range(n_records):
-    idx = record_idx[i] # get the indices of the samples belonging to each of the 5 recordings
-    
-    # Find the first sample inside the target path 
-    inside = in_target[idx] == 1 # creates a boolean array => 1 (inside) and 0 (outside)
-    first_inside = np.argmax(inside) # returns index of the first value inside the target 
+    idx = record_data[i] # get the indices of the samples after entering the target path
 
     # 4.1 Method 1: Sample-based Error %
 
-    # i. Exclude the initial approach to the target path
-    outside = in_target[idx][first_inside:] == 0 # creates a boolean array with 1 (inside) and 0 (outside)
+    # i. Identify samples outside the target path
+    inside = in_target[idx] == 1 # Boolean array: True = inside, False = outside
+    outside = ~inside # reverse boolean array to identify samples outside the target path
 
     # ii. Count outside and total samples
-    N_outside = np.sum(outside) # count samples outside the target path
-    N_total = len(idx)
+    N_outside = np.sum(outside) 
+    N_total = len(outside) # count all samples after entering the target path
 
     # iii. Calculate the error percentage
     error_sample = (N_outside / N_total) * 100 
@@ -250,26 +264,22 @@ for i in range(n_records):
 
     # 4.2 Method 2: Angle-based Error %
 
-    # i. Keep only the samples after entering the target
-    angle = recorded_angles[i][first_inside:] # keep only angles after entering the target
-    inside = inside[first_inside:] 
+    # i. Retrieve the unwrapped angles 
+    angle = recorded_angles[i]
 
-    # ii. Calculate the signed angular change
-    angle_change = angle[:-1] - angle[1:] # positve value = clockwise rotation, negative = counter-clockwise rotation
+    # ii. Calculate the changes in angle
+    angle_change = angle[:-1] - angle[1:] 
 
-    # iii. Keep angular changes between -pi and +pi
-    angle_change = (angle_change + np.pi) % (2 * np.pi) - np.pi # wrap the angle changes between -pi and +pi
-
-    # iv. Calculate the angle travelled outside the target path
-    angle_outside = np.sum(angle_change[~inside[1:]]) # 
+    # iii. Calculate the angle travelled outside the target path
+    angle_outside = np.sum(angle_change[~inside[1:]]) 
    
-   # v. Calculate the total angle travelled during the recording
-    angle_total = (np.sum(angle_change))
+   # iv. Calculate the total angle travelled during the recording
+    angle_total = np.sum(angle_change)
 
-    # vi. Calculate the error %
+    # v. Calculate the error %
     error_angle = (angle_outside / angle_total) * 100
 
-    # vii. Append angle to the list
+    # vi. Append angle-based error to the list
     calculated_error_angle.append(error_angle)
     
     print(f"Recording {i+1}:")
@@ -280,10 +290,10 @@ for i in range(n_records):
 | Recording | Sample-based Error (%) | Angle-based Error (%) | MouseReMoCo Error (%) |
 |---|---:|---:|---:|
 | 1 | 5.39 | 3.90 | 3.90 |
-| 2 | 0.85 | 0.74 | 0.74 |
-| 3 | 2.85 | 2.81 | 2.81 |
-| 4 | 0.15 | 0.13 | 0.13 |
-| 5 | 2.57 | 2.84 | 2.84 |
+| 2 | 0.87 | 0.74 | 0.74 |
+| 3 | 2.89 | 2.81 | 2.81 |
+| 4 | 0.16 | 0.13 | 0.13 |
+| 5 | 2.63 | 2.84 | 2.84 |
 
 The two methods produced similar error % results, particularly for Recordings 3 and 4. This shows that in these recordings, the proportion of samples recorded outside the target was similar to the proportion of angular movement outside the target. However, the differences between the methods were more noticeable in Recordings 1 and 5. 
 
@@ -297,7 +307,7 @@ We calculate it by dividing the total movement time by the absolute number of la
 
 $$\boxed{MT/lap = \frac{MT}{|nLaps|}}$$
 
-We first identify when the cursor enters the target and calculate the movement time from that point until the end of the recording. We then calculate the number of laps over the same period. We use the absolute value of `nLaps` because negative values indicate movement direction, not negative movement time. We reuse `recorded_angles`, `record_idx`, `in_target`, and `time_s` from previous calculations. 
+We first identify when the cursor enters the target and calculate the movement time from that point until the end of the recording. We then retrieve the previously calculated number of laps over the same period. We use the absolute value of `nLaps` because negative values indicate movement direction, not negative movement time. We reuse `record_data`, `time_s`, and `calculated_laps`from previous calculations. 
 
 ```{python}
 # 5. Calculate the MT/lap for each recording
@@ -307,28 +317,21 @@ calculated_MT_lap = []
 
 #b) Loop through the 5 recordings
 for i in range(n_records):
-    idx = record_idx[i] # get the indices of the samples belonging to each of the 5 recordings
+    idx = record_data[i] # get the indices of the samples after entering the target path
 
-    # i. Find the first sample inside the target path
-    inside = in_target[idx] == 1 # creates a boolean array => 1 (inside) and 0 (outside)
-    first_inside = np.argmax(inside) # returns index of the first value inside the target
+    # i. Select the times after entering the target
+    time = time_s[idx]
 
-    # ii. Select the times after entering the target
-    time = time_s[idx][first_inside:]
-
-    #iii. Calculate total movement time
+    #ii. Calculate total movement time
     MT = time[-1] - time[0] # (s)
 
-    # iv. Select the angles over the same period 
-    angle = recorded_angles[i][first_inside:]
+    # iii. Retrieve the previously calculated number of laps
+    n_laps = calculated_laps[i] 
 
-    # v. Calculate the number of laps
-    n_laps = (angle[-1] - angle[0]) / (2 * np.pi) 
-
-    # vi. Calculate the MT/lap
+    # iv. Calculate the MT/lap
     MT_lap = MT / abs(n_laps) # average time per lap (s/lap)
 
-    # vii. Append the MT/lap to the list
+    # v. Append the MT/lap to the list
     calculated_MT_lap.append(MT_lap) 
 
     print(f"Recording {i+1}:")
@@ -359,7 +362,7 @@ The difficulty depends on:
 - `Te` - Effective tolerance (px): How much the cursor's radius varies. 
 
 First the circumference of the average circular path using:
-$$C=2\pi r$ = 2\pi \times Re$$
+$$\boxed{C=2\pi r = 2\pi * Re}$$
 
 We then divide this by the effective tolerance.
 $$\boxed{ID_e/lap=\frac{2\pi R_e}{T_e}}$$
@@ -520,7 +523,7 @@ for i in range(n_records):
 
 The calculated `IPe` values matched MouseReMoCo's reported values for all five recordings, confirming the calculation sucessfully reproduces the software's results for this dataset. The `IPe` values was lowest in Recording 1 (7.94 bits/s) and highest in Recording 2 (24.04 bits/s). 
 
-Recording 1 had the lowest `Te`, mainly because the cursosr's radius varied much more than in the other recordings. This resulted in a larger `Te` and therefore a lower `IDe/lap`. The participant also took longer to complete each lap, which further reduced the `IPe`. 
+Recording 1 had the highest `Te`, mainly because the cursor's radius varied much more than in the other recordings. This increased raidal variation resulted in a larger `Te` and therefore a lower `IDe/lap`. The participant also took longer to complete each lap, which further reduced the `IPe`. 
 
 Although Recording 5 had the fastest movement time per lap (1.30 s/lap), it did not have the highest `IPe`. This shows that moving faster does not necessarily mean better overall performance because radial consistency also influences the `IPe`. Recordings 2-5 showed similar performance indices.
 
@@ -551,7 +554,7 @@ for i in range(n_records):
 
 In conclusion, the performance metrics calculated using Python matched the values reported by MouseReMoCo for all five recordings. This confirms that the calculations successfully reproduce the software's results for this dataset. Excluding the initial approach to the target was an important step to obtain the same results as MouseReMoCo.
 
-Overall, the results show the importance of considering multiple metrics when evaluating the performance of a circular steering task. Although performance generally increased across recordings, we can not conclude that this improvement was due to motor learning. It could also reflect familiarization with the task, a change in movement strategy, or normal performance variability. Therefore, more recordings would be needed to determine whether a consistent learning effect occured. 
+Overall, the results show the importance of considering multiple metrics when evaluating the performance of a circular steering task. Although performance generally increased across recordings, we cannot conclude that this improvement was due to motor learning. It could also reflect familiarization with the task, a change in movement strategy, or normal performance variability. Therefore, more recordings would be needed to determine whether a consistent learning effect occurred. 
 
 Recording 1 had the lowest `IPe` (7.94 bits/s), associated with a slower lap time and greater variability in the cursor's path. Although Recording 5 had the fastest lap time (1.30 s/lap), Recording 2 achieved the highest `IPe` (24.04 bits/s), while Recording 4 had the lowest error % (0.13%). These findings show that the fastest movement, the most accurate movement, and the highest effective performance do not necessarily occur in the same recording.
 
