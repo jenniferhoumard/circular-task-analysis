@@ -191,3 +191,69 @@ for name, session in [("provided", provided), ("new", new)]:
 
 The two rules only differ by one sample: recording 0 of the provided dataset (the sample recorded 4 ms before `DoRecord`) and recording 3 of the new dataset (the sample written after the separator line). The metrics computed in the next section show that this rule reproduces the values of MouseReMoCo for all the recordings of both datasets.
  
+ ### Recomputing the Metrics
+
+To apply the calculations of Section 4 to another dataset, we gathered them into a function, `compute_metrics()`, which uses exactly the same formulas (first entry into the target, unwrapped angle, `Te` = √(2πe) × SD(r), angle-based error…) and returns one row per recording with the 8 metrics, in the same order as the marker table. We first checked that it reproduces Section 4 on the provided dataset, then applied it to the new dataset, with the selection rule above and with the selection of Section 4.
+
+```{python}
+def compute_metrics(session, recordings):
+    """The 8 MouseReMoCo metrics of each recording (same calculations as in Section 4).
+    Returns an array with one row per recording and one column per metric."""
+    params = session["params"]
+    metrics = []
+    for idx in recordings:
+        # Keep the samples from the first entry into the target
+        first_inside = np.argmax(session["in_target"][idx] == 1)
+        idx = idx[first_inside:]
+        inside = session["in_target"][idx] == 1
+        r = session["r"][idx]
+        t = session["time_s"][idx]
+
+        # nLaps: unwrapped angle of the cursor (y pointing upwards)
+        angle = np.unwrap(np.arctan2(-session["y"][idx], session["x"][idx]))
+        n_laps = (angle[-1] - angle[0]) / (2 * np.pi)
+
+        # Re, Te, error (angle-based), MT/lap, IDe/lap, Be, IPe
+        Re = np.mean(r)
+        Te = np.sqrt(2 * np.pi * np.e) * np.std(r, ddof=1)
+        angle_change = -np.diff(angle)
+        error = np.sum(angle_change[~inside[1:]]) / np.sum(angle_change) * 100
+        MT_lap = (t[-1] - t[0]) / abs(n_laps)
+        IDe_lap = 2 * np.pi * Re / Te
+        Be = Te / params["taskTolerance"]
+        IPe = IDe_lap / MT_lap
+
+        metrics.append([n_laps, Re, Te, error, MT_lap, IDe_lap, Be, IPe])
+    return np.array(metrics)
+
+
+def compare_with_marker(calculated, marker_results):
+    """True for each recording whose 8 metrics are identical to MouseReMoCo (2 decimals)."""
+    return np.all(np.abs(np.round(calculated, 2) - marker_results) < 1e-9, axis=1)
+
+
+# Validation on the provided dataset: same results as Section 4 and as MouseReMoCo
+metrics_provided = compute_metrics(provided, get_recordings(provided))
+print("Provided dataset, identical to Section 4:",
+      np.allclose(metrics_provided, np.column_stack([calculated_laps, calculated_Re, calculated_Te,
+                  calculated_error_angle, calculated_MT_lap, calculated_IDe_lap, calculated_Be, calculated_IPe])))
+print("Provided dataset, identical to MouseReMoCo:", compare_with_marker(metrics_provided, provided["marker_results"]))
+
+# New dataset: selection rule of this section vs selection rule of Section 4
+metrics_new = compute_metrics(new, get_recordings(new))
+print("New dataset, identical to MouseReMoCo:     ", compare_with_marker(metrics_new, new["marker_results"]))
+
+t = new["time_ms"]
+recordings_section4 = [np.where((t > (new["record_end_ms"][i - 1] if i > 0 else -np.inf))
+                                & (t <= new["record_end_ms"][i]))[0] for i in range(new["n_records"])]
+metrics_section4 = compute_metrics(new, recordings_section4)
+print("New dataset with the Section 4 selection:  ", compare_with_marker(metrics_section4, new["marker_results"]))
+
+print()
+print("New dataset: MT/lap (s/lap) depending on the selection of the samples")
+print("recording | MouseReMoCo | this section | Section 4 selection")
+for i in range(new["n_records"]):
+    print(f"{i:>9} | {new['marker_results'][i, 4]:>11.2f} | {metrics_new[i, 4]:>12.2f} | {metrics_section4[i, 4]:>19.2f}")
+```
+
+The function reproduces Section 4 and MouseReMoCo on the provided dataset, and the 8 metrics of the 6 recordings of the new dataset are identical to those of its marker file: **our analysis is validated on an independent recording**. With the selection of Section 4, only recording 0 is correct (it has no pause before it): for the other recordings, the samples of the previous pause are included, which doubles the movement time per lap (and halves `IPe`). This shows that a method validated on one dataset can fail on another one recorded in different conditions (here, another software version).
