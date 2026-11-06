@@ -287,7 +287,7 @@ for i in range(n_records):
     angle = recorded_angles[i]
 
     # ii. Calculate the changes in angle
-    angle_change = np.diff(angle) 
+    angle_change = -np.diff(angle) # negative because the participant moved clockwise
 
     # iii. Calculate the angle travelled outside the target path
     angle_outside = np.sum(angle_change[~inside[1:]]) 
