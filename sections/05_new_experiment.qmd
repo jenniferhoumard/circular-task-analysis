@@ -257,3 +257,95 @@ for i in range(new["n_records"]):
 ```
 
 The function reproduces Section 4 and MouseReMoCo on the provided dataset, and the 8 metrics of the 6 recordings of the new dataset are identical to those of its marker file: **our analysis is validated on an independent recording**. With the selection of Section 4, only recording 0 is correct (it has no pause before it): for the other recordings, the samples of the previous pause are included, which doubles the movement time per lap (and halves `IPe`). This shows that a method validated on one dataset can fail on another one recorded in different conditions (here, another software version).
+
+### Figures and Comparison with the Provided Dataset
+
+To draw the figures of Section 3 for the new dataset, we adapted the function `plot_record()` so that it takes the session as an argument and uses its own parameters (centre, screen size, target limits). @fig-new-record-0 and @fig-new-record-5 show the first and the last recordings of the new dataset.
+
+```{python}
+def plot_session_record(session, recordings, i, title):
+    """Trajectory (left) and x, y, target status against time (right) of recording i of a session."""
+    p = session["params"]
+    idx = recordings[i]
+    x_i, y_up_i = session["x"][idx], -session["y"][idx]
+    inside = session["in_target"][idx] == 1
+    t_i = (session["time_ms"][idx] - session["record_start_ms"][i]) / 1000   # time since DoRecord
+    r_min_i = p["internalRadius"] + p["cursorRadius"]
+    r_max_i = p["externalRadius"] - p["cursorRadius"] - p["borderRadius"]
+
+    fig, axes = plt.subplot_mosaic([["traj", "x"], ["traj", "y"], ["traj", "inside"]],
+                                   figsize=(10, 4.3), width_ratios=[1.15, 1])
+    ax = axes["traj"]
+    ax.add_patch(Rectangle((-p["centerX"], p["centerY"] - p["screenHeight"]),
+                           p["screenWidth"], p["screenHeight"],
+                           fill=False, edgecolor="magenta", lw=1.5, label="screen"))
+    ax.add_patch(Circle((0, 0), r_max_i, color="yellow", label="target"))
+    ax.add_patch(Circle((0, 0), r_min_i, color="white"))
+    ax.plot(x_i[inside], y_up_i[inside], ".", color="green", ms=1, label="inside")
+    ax.plot(x_i[~inside], y_up_i[~inside], ".", color="red", ms=2, label="outside")
+    ax.set_aspect("equal")
+    ax.invert_yaxis()
+    ax.set_xlabel("X (pixels)")
+    ax.set_ylabel("Y (pixels)")
+    ax.set_title(title)
+    ax.legend(loc="upper right", fontsize=7)
+
+    axes["x"].plot(t_i, x_i, color="blue", label="x")
+    axes["y"].plot(t_i, y_up_i, color="orange", label="y")
+    axes["inside"].plot(t_i, session["in_target"][idx], color="green", label="is_inside")
+    axes["x"].set_ylabel("X position")
+    axes["y"].set_ylabel("Y position")
+    axes["inside"].set_ylabel("Is inside")
+    axes["inside"].set_xlabel("Time since the start of the recording (s)")
+    for name in ["x", "y", "inside"]:
+        axes[name].grid(True)
+        axes[name].legend(loc="upper right", fontsize=7)
+    for name in ["x", "y"]:
+        axes[name].sharex(axes["inside"])
+        axes[name].tick_params(labelbottom=False)
+    plt.tight_layout()
+    plt.show()
+
+
+recordings_new = get_recordings(new)
+```
+
+```{python}
+#| label: fig-new-record-0
+#| fig-cap: "New dataset, recording 0 (first recording). Left: trajectory, with the limits of the screen (magenta) and the target (yellow); green: inside the target, red: outside. Right: x position, y position and target status against time."
+plot_session_record(new, recordings_new, 0, "new dataset, recording 0")
+```
+
+```{python}
+#| label: fig-new-record-5
+#| fig-cap: "New dataset, recording 5 (last recording). Same representation as @fig-new-record-0."
+plot_session_record(new, recordings_new, 5, "new dataset, recording 5")
+```
+
+Unlike the provided dataset, there is no approach phase at the start of the recordings: the cursor stayed on the track during the pauses, so it was already inside the target when each recording started. In the first recording, the cursor often leaves the target, mostly towards the **inside** of the circle (`Re` = 203.8 px, below the ideal 209.5 px): the participant tended to cut the circle. In the last recording, the exits are much rarer and shorter.
+
+@fig-comparison compares four metrics of the two datasets across the recordings.
+
+```{python}
+#| label: fig-comparison
+#| fig-cap: "Movement time per lap, error, effective tolerance and index of effective performance of each recording, for the provided dataset and the new dataset."
+names = ["MT/lap (s/lap)", "error (%)", "Te (px)", "IPe (bit/s)"]
+columns = [4, 3, 2, 7]          # position of each metric in the marker table
+fig, axes = plt.subplots(1, 4, figsize=(11, 3))
+for ax, name, c in zip(axes, names, columns):
+    ax.plot(np.arange(provided["n_records"]), metrics_provided[:, c], "o-", label="provided dataset")
+    ax.plot(np.arange(new["n_records"]), metrics_new[:, c], "s-", label="new dataset")
+    ax.set_title(name, fontsize=10)
+    ax.set_xlabel("recording")
+    ax.set_xticks(range(6))
+    ax.grid(True, alpha=0.3)
+axes[0].legend(fontsize=8)
+plt.tight_layout()
+plt.show()
+```
+
+The new recording shows a much lower performance than the provided one: from recording 1 onwards, laps are slower (2.2–2.6 s/lap instead of 1.3–1.6 s/lap), the error is higher (6–18 % instead of 0.1–2.8 %) and the effective tolerance larger (52–69 px instead of 34–44 px), so that `IPe` is about half (7–11 bit/s instead of 21–24 bit/s).
+
+The evolution across recordings also illustrates the speed–accuracy trade-off. The first recording was the fastest (1.77 s/lap) but also the least accurate (27 % error). The participant then slowed down (2.6 s/lap in recordings 1 and 2), which reduced the error, and finally moved slightly faster again while keeping a low error (about 2.2 s/lap and 6–8 % in recordings 3 to 5), so that `IPe` increased from about 7 to 11 bit/s. This progression is consistent with the participant discovering the task, but a single session is not enough to separate learning from other factors.
+
+Several conditions can explain the lower performance (Section 5.1): a trackpad set to its maximum speed instead of an unknown, possibly more precise device, a less stable posture (lying on a sofa) and no previous experience of the task. Since only one session per dataset is available, these factors cannot be separated.
