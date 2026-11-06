@@ -157,4 +157,4 @@ Unlike the provided file (where only one sample was outside the recordings), 452
 The new recording also has a lower sampling frequency (about 120 Hz instead of about 199 Hz), which confirms that MouseReMoCo records a sample at each mouse event rather than at a fixed rate (Section 2.3): the rate depends on the input device, here a trackpad.
 
 ## Results and Validation
-xx
+ 
