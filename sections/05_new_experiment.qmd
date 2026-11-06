@@ -1,8 +1,351 @@
 ## Experimental Setup and Recording Procedure
-xx
+
+To check that our analysis also works on independently collected data, we recorded a new session with MouseReMoCo and analysed it with the same methods as the provided dataset.
+
+**Participant and equipment.** The recording was performed by one member of the group *(Sarah)*(right-handed), who had never performed the task before and did not do any practice trial. The task was performed on a MacBook Air M4 (13.6-inch screen, native resolution 2560 × 1664 pixels, displayed at 1470 × 956 points), using the built-in **trackpad** with the middle finger of the right (dominant) hand. The trackpad tracking speed was set to its maximum in the macOS settings. The participant was lying on a sofa with the laptop on her lap.
+
+**Software and settings.** We used MouseReMoCo version 1.3.0 (Java 8), launched from the terminal with the same task settings as the provided dataset:
+
+```bash
+java -jar mouseReMoCo1.3.0.jar -task circular -cycleMaxNumber 6 -cycleDuration 20 -externalRadius 250 -internalRadius 170
+```
+
+The other parameters (cursor radius 16 px, border 1 px, colours) were left at their default values, which are identical to those of the provided dataset. The geometry of the track is therefore the same in pixels: `taskRadius` = 209.5 px, `taskTolerance` = 47 px and `indexOfDifficulty` ≈ 28.0. On this screen, one pixel measures about 0.20 mm (13.6-inch diagonal for 1470 × 956 points), so the outer circle has a radius of about 4.9 cm and the track is about 9.3 mm wide.
+
+**Procedure.** After the window opened, the cursor was placed on the track and the timed sequence was started with the space bar. The software then alternated automatically 6 recordings of 20 s (red cursor) and 6 pauses of 20 s (yellow cursor). During each recording, the participant moved the cursor around the track as fast as possible while trying to stay inside it, always in the clockwise direction. After the 6th recording, the window was closed with the `q` key. No incident occurred during the session. The two files produced by MouseReMoCo (`data.csv` and `marker.csv`) were renamed and stored in the `data/` folder as `002SaDu_R1.csv` and `002SaDu_R1.marker.csv`.
+
+**Differences with the provided dataset.** Although the task settings are identical, several conditions differ from the provided recording and should be kept in mind when comparing the results:
+
+- **Input device:** a trackpad set to its maximum speed, so that a small finger movement produces a large cursor movement, which can make accurate control more difficult. The device used for the provided dataset is not documented in the files.
+- **Posture:** lying on a sofa, which is less stable than sitting at a desk.
+- **Experience:** this was the participant's first contact with the task.
+- **Screen:** the track has the same size in pixels, but its physical size may differ, since the screen of the provided dataset is not documented.
+- **Software version:** 1.3.0 instead of 1.2.0rc5.
+- **Number of recordings:** the 6 planned recordings were completed, whereas the provided dataset only contains 5.
 
 ## Importing the New Dataset
-xx
+
+In Section 2, the provided files were read step by step, and the results were stored in variables such as `params`, `x`, `y` or `record_idx`. Running the same code on the new files would overwrite these variables, which are still needed in the other sections. We therefore gathered all the import steps of Section 2 into a single function, `load_session()`, which takes the paths of the two files of a session and returns all the results in a dictionary. The same function can then be applied to any MouseReMoCo recording.
+
+```{python}
+def load_session(data_file, marker_file):
+    """Read a MouseReMoCo session (raw movement file + marker file)
+    and return its content in a dictionary (same steps as in Section 2)."""
+
+    # 1. Parameters: first line of the raw movement file
+    with open(data_file) as f:
+        first_line = f.readline().strip()
+    params = {}
+    for item in first_line.split(";"):
+        name, value = item.split(" ", 1)
+        try:
+            value = float(value)      # numerical parameter
+        except ValueError:
+            pass                      # non-numerical parameter: kept as text
+        params[name] = value
+
+    # 2. Samples: skip the 4 header lines and remove the "0,0,0,0" separator lines
+    data = np.loadtxt(data_file, delimiter=",", skiprows=4, dtype=np.int64)
+    n_separators = np.sum(data[:, 0] == 0)
+    is_separator = data[:, 0] == 0
+    # Number of separator lines written before each sample: 0 for the 1st recording, 1 for the 2nd...
+    block = np.cumsum(is_separator)[~is_separator]
+    data = data[~is_separator]
+    time_ms = data[:, 0]
+    mouse_x = data[:, 1]
+    mouse_y = data[:, 2]
+    in_target = data[:, 3]
+
+    # 3. Marker file: start and end of each recording, and summary table
+    with open(marker_file) as f:
+        marker_lines = f.readlines()
+    record_start_ms, record_end_ms, marker_results = [], [], []
+    for line in marker_lines:
+        if "DoCycleChange:DoRecord" in line:
+            record_start_ms.append(int(line.split(",")[1]))
+        elif "DoCycleChange:DoPause" in line:
+            record_end_ms.append(int(line.split(",")[1]))
+        row = line.strip()
+        if row.startswith("Var"):
+            marker_names = [name.strip().replace("/", "_") for name in row.split(",")[1:9]]
+        elif row.startswith("Theory"):
+            marker_theory = np.array([float(v) if v.strip() else np.nan
+                                      for v in row.split(",")[1:9]])
+        elif row.startswith("Rec"):
+            marker_results.append([float(v) for v in row.split(",")[1:9]])
+
+    record_start_ms = np.array(record_start_ms)
+    record_end_ms = np.array(record_end_ms)
+    n_records = len(record_start_ms)
+    # If the window was closed during the last recording, it has no DoPause event:
+    # its end is then the last sample
+    if len(record_end_ms) < n_records:
+        record_end_ms = np.append(record_end_ms, time_ms[-1])
+    marker_results = np.array(marker_results)[:n_records]
+
+    # 4. Derived variables (same definitions as in Section 2)
+    x = mouse_x - params["centerX"]
+    y = mouse_y - params["centerY"]
+    r = np.sqrt(x**2 + y**2)
+    time_s = (time_ms - time_ms[0]) / 1000
+    record_idx = [np.where((time_ms >= record_start_ms[i]) & (time_ms <= record_end_ms[i]))[0]
+                  for i in range(n_records)]
+
+    return {"params": params, "n_separators": n_separators,
+            "time_ms": time_ms, "time_s": time_s,
+            "mouse_x": mouse_x, "mouse_y": mouse_y, "in_target": in_target, "block": block,
+            "x": x, "y": y, "r": r,
+            "record_start_ms": record_start_ms, "record_end_ms": record_end_ms,
+            "n_records": n_records, "record_idx": record_idx,
+            "marker_names": marker_names, "marker_theory": marker_theory,
+            "marker_results": marker_results}
+```
+
+To check that the function is correct, we first apply it to the provided files and compare its results with the variables computed step by step in Section 2.
+
+```{python}
+provided = load_session(data_file, marker_file)
+
+checks = {
+    "params": provided["params"] == params,
+    "time_ms": np.array_equal(provided["time_ms"], time_ms),
+    "x": np.array_equal(provided["x"], x),
+    "y": np.array_equal(provided["y"], y),
+    "in_target": np.array_equal(provided["in_target"], in_target),
+    "record_idx": all(np.array_equal(a, b) for a, b in zip(provided["record_idx"], record_idx)),
+    "marker_results": np.array_equal(provided["marker_results"], marker_results),
+}
+for name, ok in checks.items():
+    print(f"{name:<15} identical to Section 2: {ok}")
+```
+
+All the results are identical, so the function reproduces Section 2 exactly. We then apply it to the new recording.
+
+```{python}
+new = load_session("data/002SaDu_R1.csv", "data/002SaDu_R1.marker.csv")
+
+print("Separator lines removed:", new["n_separators"])
+print("Number of samples:", len(new["time_ms"]))
+print(f"Session duration: {new['time_s'][-1]:.2f} s")
+print("Number of recordings:", new["n_records"])
+print()
+for i in range(new["n_records"]):
+    idx = new["record_idx"][i]
+    duration_s = (new["time_ms"][idx[-1]] - new["time_ms"][idx[0]]) / 1000
+    print(f"record {i}: {len(idx)} samples in {duration_s:.2f} s "
+          f"({(len(idx) - 1) / duration_s:.2f} Hz)")
+```
+
+The new file contains more samples than the 6 recordings: we checked where the extra samples are located.
+
+```{python}
+t = new["time_ms"]
+in_rec = np.zeros(len(t), dtype=bool)
+for idx in new["record_idx"]:
+    in_rec[idx] = True
+
+n_outside = np.sum(~in_rec)
+n_before = np.sum(t < new["record_start_ms"][0])
+n_after = np.sum(t > new["record_end_ms"][-1])
+
+print("Samples outside the recordings:", n_outside)
+print("  before the first recording:", n_before)
+print("  during the pauses between recordings:", n_outside - n_before - n_after)
+print("  after the last recording:", n_after)
+print(f"First sample after the start of recording 0: {(t[0] - new['record_start_ms'][0]) / 1000:.3f} s")
+```
+
+Unlike the provided file (where only one sample was outside the recordings), 452 samples of the new file were recorded **during the pauses**, including the last one, which ended when the window was closed. This difference comes from the software version: MouseReMoCo 1.3.0, used for the new recording, saves the data during the pauses ("data should be saved during pause", issue #15 in the [release notes](https://github.com/DenisMot/mouseReMoCo/releases/tag/v1.3.0-release)), whereas version 1.2.0rc5, used for the provided dataset, did not. Because the recordings are selected using the `DoRecord` and `DoPause` events of the marker file, these samples are automatically excluded from the analysis.
+
+The new recording also has a lower sampling frequency (about 120 Hz instead of about 199 Hz), which confirms that MouseReMoCo records a sample at each mouse event rather than at a fixed rate (Section 2.3): the rate depends on the input device, here a trackpad.
 
 ## Results and Validation
-xx
+
+### Selecting the Samples of Each Recording
+
+Before recomputing the metrics, we checked that the samples of each recording are selected in the same way as MouseReMoCo. The method of Section 4 selects all the samples recorded after the end of the previous recording, up to the `DoPause` event. This works for the provided dataset, where no sample is recorded during the pauses, but not for the new one: with MouseReMoCo 1.3.0, the samples of the pauses are also saved (Section 5.2), so this method would add about 20 s of pause to each recording.
+
+By comparing several selection rules with the marker files, we found a rule that reproduces MouseReMoCo for both datasets:
+
+- **end of a recording:** the `0,0,0,0` separator line written by MouseReMoCo in the raw file. In the new dataset, one sample of recording 3, recorded 1 ms before `DoPause`, is written *after* the separator line: it already belongs to the pause.
+- **start of a recording:** the `DoRecord` event, with a tolerance of 10 ms. This keeps the sample recorded 4 ms before `DoRecord` in recording 0 of the provided dataset (Section 4), and removes the samples of the pauses in the new dataset.
+
+```{python}
+def get_recordings(session, tolerance_ms=10):
+    """Indices of the samples of each recording: samples written before the separator
+    line that ends the recording, and recorded at most tolerance_ms before DoRecord."""
+    t = session["time_ms"]
+    recordings = []
+    for i in range(session["n_records"]):
+        in_block = session["block"] == i                                   # before the i-th separator line
+        after_start = t >= session["record_start_ms"][i] - tolerance_ms    # not during the previous pause
+        recordings.append(np.where(in_block & after_start)[0])
+    return recordings
+
+
+for name, session in [("provided", provided), ("new", new)]:
+    recordings = get_recordings(session)
+    print(f"{name:<8} samples per recording: {[len(idx) for idx in recordings]}")
+    print(f"{'':<8} with DoRecord/DoPause: {[len(idx) for idx in session['record_idx']]}")
+```
+
+The two rules only differ by one sample: recording 0 of the provided dataset (the sample recorded 4 ms before `DoRecord`) and recording 3 of the new dataset (the sample written after the separator line). The metrics computed in the next section show that this rule reproduces the values of MouseReMoCo for all the recordings of both datasets.
+ 
+ ### Recomputing the Metrics
+
+To apply the calculations of Section 4 to another dataset, we gathered them into a function, `compute_metrics()`, which uses exactly the same formulas (first entry into the target, unwrapped angle, `Te` = √(2πe) × SD(r), angle-based error…) and returns one row per recording with the 8 metrics, in the same order as the marker table. We first checked that it reproduces Section 4 on the provided dataset, then applied it to the new dataset, with the selection rule above and with the selection of Section 4.
+
+```{python}
+def compute_metrics(session, recordings):
+    """The 8 MouseReMoCo metrics of each recording (same calculations as in Section 4).
+    Returns an array with one row per recording and one column per metric."""
+    params = session["params"]
+    metrics = []
+    for idx in recordings:
+        # Keep the samples from the first entry into the target
+        first_inside = np.argmax(session["in_target"][idx] == 1)
+        idx = idx[first_inside:]
+        inside = session["in_target"][idx] == 1
+        r = session["r"][idx]
+        t = session["time_s"][idx]
+
+        # nLaps: unwrapped angle of the cursor (y pointing upwards)
+        angle = np.unwrap(np.arctan2(-session["y"][idx], session["x"][idx]))
+        n_laps = (angle[-1] - angle[0]) / (2 * np.pi)
+
+        # Re, Te, error (angle-based), MT/lap, IDe/lap, Be, IPe
+        Re = np.mean(r)
+        Te = np.sqrt(2 * np.pi * np.e) * np.std(r, ddof=1)
+        angle_change = -np.diff(angle)
+        error = np.sum(angle_change[~inside[1:]]) / np.sum(angle_change) * 100
+        MT_lap = (t[-1] - t[0]) / abs(n_laps)
+        IDe_lap = 2 * np.pi * Re / Te
+        Be = Te / params["taskTolerance"]
+        IPe = IDe_lap / MT_lap
+
+        metrics.append([n_laps, Re, Te, error, MT_lap, IDe_lap, Be, IPe])
+    return np.array(metrics)
+
+
+def compare_with_marker(calculated, marker_results):
+    """True for each recording whose 8 metrics are identical to MouseReMoCo (2 decimals)."""
+    return np.all(np.abs(np.round(calculated, 2) - marker_results) < 1e-9, axis=1)
+
+
+# Validation on the provided dataset: same results as Section 4 and as MouseReMoCo
+metrics_provided = compute_metrics(provided, get_recordings(provided))
+print("Provided dataset, identical to Section 4:",
+      np.allclose(metrics_provided, np.column_stack([calculated_laps, calculated_Re, calculated_Te,
+                  calculated_error_angle, calculated_MT_lap, calculated_IDe_lap, calculated_Be, calculated_IPe])))
+print("Provided dataset, identical to MouseReMoCo:", compare_with_marker(metrics_provided, provided["marker_results"]))
+
+# New dataset: selection rule of this section vs selection rule of Section 4
+metrics_new = compute_metrics(new, get_recordings(new))
+print("New dataset, identical to MouseReMoCo:     ", compare_with_marker(metrics_new, new["marker_results"]))
+
+t = new["time_ms"]
+recordings_section4 = [np.where((t > (new["record_end_ms"][i - 1] if i > 0 else -np.inf))
+                                & (t <= new["record_end_ms"][i]))[0] for i in range(new["n_records"])]
+metrics_section4 = compute_metrics(new, recordings_section4)
+print("New dataset with the Section 4 selection:  ", compare_with_marker(metrics_section4, new["marker_results"]))
+
+print()
+print("New dataset: MT/lap (s/lap) depending on the selection of the samples")
+print("recording | MouseReMoCo | this section | Section 4 selection")
+for i in range(new["n_records"]):
+    print(f"{i:>9} | {new['marker_results'][i, 4]:>11.2f} | {metrics_new[i, 4]:>12.2f} | {metrics_section4[i, 4]:>19.2f}")
+```
+
+The function reproduces Section 4 and MouseReMoCo on the provided dataset, and the 8 metrics of the 6 recordings of the new dataset are identical to those of its marker file: **our analysis is validated on an independent recording**. With the selection of Section 4, only recording 0 is correct (it has no pause before it): for the other recordings, the samples of the previous pause are included, which doubles the movement time per lap (and halves `IPe`). This shows that a method validated on one dataset can fail on another one recorded in different conditions (here, another software version).
+
+### Figures and Comparison with the Provided Dataset
+
+To draw the figures of Section 3 for the new dataset, we adapted the function `plot_record()` so that it takes the session as an argument and uses its own parameters (centre, screen size, target limits). @fig-new-record-0 and @fig-new-record-5 show the first and the last recordings of the new dataset.
+
+```{python}
+def plot_session_record(session, recordings, i, title):
+    """Trajectory (left) and x, y, target status against time (right) of recording i of a session."""
+    p = session["params"]
+    idx = recordings[i]
+    x_i, y_up_i = session["x"][idx], -session["y"][idx]
+    inside = session["in_target"][idx] == 1
+    t_i = (session["time_ms"][idx] - session["record_start_ms"][i]) / 1000   # time since DoRecord
+    r_min_i = p["internalRadius"] + p["cursorRadius"]
+    r_max_i = p["externalRadius"] - p["cursorRadius"] - p["borderRadius"]
+
+    fig, axes = plt.subplot_mosaic([["traj", "x"], ["traj", "y"], ["traj", "inside"]],
+                                   figsize=(10, 4.3), width_ratios=[1.15, 1])
+    ax = axes["traj"]
+    ax.add_patch(Rectangle((-p["centerX"], p["centerY"] - p["screenHeight"]),
+                           p["screenWidth"], p["screenHeight"],
+                           fill=False, edgecolor="magenta", lw=1.5, label="screen"))
+    ax.add_patch(Circle((0, 0), r_max_i, color="yellow", label="target"))
+    ax.add_patch(Circle((0, 0), r_min_i, color="white"))
+    ax.plot(x_i[inside], y_up_i[inside], ".", color="green", ms=1, label="inside")
+    ax.plot(x_i[~inside], y_up_i[~inside], ".", color="red", ms=2, label="outside")
+    ax.set_aspect("equal")
+    ax.invert_yaxis()
+    ax.set_xlabel("X (pixels)")
+    ax.set_ylabel("Y (pixels)")
+    ax.set_title(title)
+    ax.legend(loc="upper right", fontsize=7)
+
+    axes["x"].plot(t_i, x_i, color="blue", label="x")
+    axes["y"].plot(t_i, y_up_i, color="orange", label="y")
+    axes["inside"].plot(t_i, session["in_target"][idx], color="green", label="is_inside")
+    axes["x"].set_ylabel("X position")
+    axes["y"].set_ylabel("Y position")
+    axes["inside"].set_ylabel("Is inside")
+    axes["inside"].set_xlabel("Time since the start of the recording (s)")
+    for name in ["x", "y", "inside"]:
+        axes[name].grid(True)
+        axes[name].legend(loc="upper right", fontsize=7)
+    for name in ["x", "y"]:
+        axes[name].sharex(axes["inside"])
+        axes[name].tick_params(labelbottom=False)
+    plt.tight_layout()
+    plt.show()
+
+
+recordings_new = get_recordings(new)
+```
+
+```{python}
+#| label: fig-new-record-0
+#| fig-cap: "New dataset, recording 0 (first recording). Left: trajectory, with the limits of the screen (magenta) and the target (yellow); green: inside the target, red: outside. Right: x position, y position and target status against time."
+plot_session_record(new, recordings_new, 0, "new dataset, recording 0")
+```
+
+```{python}
+#| label: fig-new-record-5
+#| fig-cap: "New dataset, recording 5 (last recording). Same representation as @fig-new-record-0."
+plot_session_record(new, recordings_new, 5, "new dataset, recording 5")
+```
+
+Unlike the provided dataset, there is no approach phase at the start of the recordings: the cursor stayed on the track during the pauses, so it was already inside the target when each recording started. In the first recording, the cursor often leaves the target, mostly towards the **inside** of the circle (`Re` = 203.8 px, below the ideal 209.5 px): the participant tended to cut the circle. In the last recording, the exits are much rarer and shorter.
+
+@fig-comparison compares four metrics of the two datasets across the recordings.
+
+```{python}
+#| label: fig-comparison
+#| fig-cap: "Movement time per lap, error, effective tolerance and index of effective performance of each recording, for the provided dataset and the new dataset."
+names = ["MT/lap (s/lap)", "error (%)", "Te (px)", "IPe (bit/s)"]
+columns = [4, 3, 2, 7]          # position of each metric in the marker table
+fig, axes = plt.subplots(1, 4, figsize=(11, 3))
+for ax, name, c in zip(axes, names, columns):
+    ax.plot(np.arange(provided["n_records"]), metrics_provided[:, c], "o-", label="provided dataset")
+    ax.plot(np.arange(new["n_records"]), metrics_new[:, c], "s-", label="new dataset")
+    ax.set_title(name, fontsize=10)
+    ax.set_xlabel("recording")
+    ax.set_xticks(range(6))
+    ax.grid(True, alpha=0.3)
+axes[0].legend(fontsize=8)
+plt.tight_layout()
+plt.show()
+```
+
+The new recording shows a much lower performance than the provided one: from recording 1 onwards, laps are slower (2.2–2.6 s/lap instead of 1.3–1.6 s/lap), the error is higher (6–18 % instead of 0.1–2.8 %) and the effective tolerance larger (52–69 px instead of 34–44 px), so that `IPe` is about half (7–11 bit/s instead of 21–24 bit/s).
+
+The evolution across recordings also illustrates the speed–accuracy trade-off. The first recording was the fastest (1.77 s/lap) but also the least accurate (27 % error). The participant then slowed down (2.6 s/lap in recordings 1 and 2), which reduced the error, and finally moved slightly faster again while keeping a low error (about 2.2 s/lap and 6–8 % in recordings 3 to 5), so that `IPe` increased from about 7 to 11 bit/s. This progression is consistent with the participant discovering the task, but a single session is not enough to separate learning from other factors.
+
+Several conditions can explain the lower performance (Section 5.1): a trackpad set to its maximum speed instead of an unknown, possibly more precise device, a less stable posture (lying on a sofa) and no previous experience of the task. Since only one session per dataset is available, these factors cannot be separated.
