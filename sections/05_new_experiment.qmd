@@ -10,7 +10,7 @@ To check that our analysis also works on independently collected data, we record
 java -jar mouseReMoCo1.3.0.jar -task circular -cycleMaxNumber 6 -cycleDuration 20 -externalRadius 250 -internalRadius 170
 ```
 
-The other parameters (cursor radius 16 px, border 1 px, colours) were left at their default values, which are identical to those of the provided dataset. The geometry of the track is therefore the same in pixels: `taskRadius` = 209.5 px, `taskTolerance` = 47 px and `indexOfDifficulty` ≈ 28.0. On this screen, one pixel measures about 0.20 mm (13.6-inch diagonal for 1470 × 956 points), so the outer circle has a radius of about 4.9 cm and the track is about 9.3 mm wide.
+The other parameters (cursor radius 16 px, border 1 px, colours) were left at their default values, which are identical to those of the provided dataset. The geometry of the track is therefore the same in pixels: `taskRadius` = 209.5 px, `taskTolerance` = 47 px and `indexOfDifficulty` ≈ 28.0. On this screen, one pixel measures about 0.20 mm (13.6-inch diagonal for 1470 × 956 points), so the outer circle has a radius of about 4.9 cm, the drawn track (80 px) is about 15.8 mm wide and the band available to the cursor centre (47 px) is about 9.3 mm wide.
 
 **Procedure.** After the window opened, the cursor was placed on the track and the timed sequence was started with the space bar. The software then alternated automatically 6 recordings of 20 s (red cursor) and 6 pauses of 20 s (yellow cursor). During each recording, the participant moved the cursor around the track as fast as possible while trying to stay inside it, always in the clockwise direction. After the 6th recording, the window was closed with the `q` key. No incident occurred during the session. The two files produced by MouseReMoCo (`data.csv` and `marker.csv`) were renamed and stored in the `data/` folder as `002SaDu_R1.csv` and `002SaDu_R1.marker.csv`.
 
@@ -190,8 +190,8 @@ for name, session in [("provided", provided), ("new", new)]:
 ```
 
 The two rules only differ by one sample: recording 0 of the provided dataset (the sample recorded 4 ms before `DoRecord`) and recording 3 of the new dataset (the sample written after the separator line). The metrics computed in the next section show that this rule reproduces the values of MouseReMoCo for all the recordings of both datasets.
- 
- ### Recomputing the Metrics
+
+### Recomputing the Metrics
 
 To apply the calculations of Section 4 to another dataset, we gathered them into a function, `compute_metrics()`, which uses exactly the same formulas (first entry into the target, unwrapped angle, `Te` = √(2πe) × SD(r), angle-based error…) and returns one row per recording with the 8 metrics, in the same order as the marker table. We first checked that it reproduces Section 4 on the provided dataset, then applied it to the new dataset, with the selection rule above and with the selection of Section 4.
 
@@ -322,7 +322,7 @@ plot_session_record(new, recordings_new, 0, "new dataset, recording 0")
 plot_session_record(new, recordings_new, 5, "new dataset, recording 5")
 ```
 
-Unlike the provided dataset, there is no approach phase at the start of the recordings: the cursor stayed on the track during the pauses, so it was already inside the target when each recording started. In the first recording, the cursor often leaves the target, mostly towards the **inside** of the circle (`Re` = 203.8 px, below the ideal 209.5 px): the participant tended to cut the circle. In the last recording, the exits are much rarer and shorter.
+Unlike the provided dataset, there is no approach phase at the start of the recordings: the cursor stayed on the track during the pauses, so it was already inside the target when the recordings started, except in recording 2, where it started just inside the inner limit (r = 182 px) and entered the target about 1.15 s after the start. In the first recording, the cursor often leaves the target, mostly towards the **inside** of the circle (`Re` = 203.8 px, below the ideal 209.5 px): the participant tended to cut the circle. In the last recording, the exits are much rarer and shorter.
 
 @fig-comparison compares four metrics of the two datasets across the recordings.
 
