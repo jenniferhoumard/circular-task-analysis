@@ -202,7 +202,15 @@ for name, session in [("provided", provided), ("new", new)]:
     print(f"{'':<8} with DoRecord/DoPause: {[len(idx) for idx in session['record_idx']]}")
 ```
 
-The two rules only differ by one sample: recording 0 of the provided dataset (the sample recorded 4 ms before `DoRecord`) and recording 3 of the new dataset (the sample written after the separator line). The metrics computed in the next section show that this rule reproduces the values of MouseReMoCo for all the recordings of both datasets.
+@tbl-selection-rules compares this rule with the two rules used in the previous sections. The rule of Section 2 (from `DoRecord` to `DoPause`) misses the sample recorded 4 ms before `DoRecord` in recording 0 of the provided dataset, and keeps the sample of recording 3 of the new dataset that is written after the separator line: this sample belongs to the pause and is therefore excluded by our rule. The rule of Section 4 (all the samples after the end of the previous recording, up to `DoPause`) reproduces MouseReMoCo for the provided dataset, where nothing is recorded during the pauses, but includes the whole previous pause in the new dataset. Only the rule of this section reproduces MouseReMoCo for all the recordings of both datasets, without adding or removing any sample by hand (the metrics are computed in the next section).
+
+| Selection rule | Provided dataset | New dataset |
+|---|:---:|:---:|
+| Section 2: from `DoRecord` to `DoPause` | 4/5 | 5/6 |
+| Section 4: from the end of the previous recording to `DoPause` | 5/5 | 1/6 |
+| Section 5: same block as the recording, from `DoRecord` − 10 ms | 5/5 | 6/6 |
+
+: Number of recordings whose 8 metrics are identical to MouseReMoCo (2 decimals), depending on the selection rule. {#tbl-selection-rules}
 
 ### Recomputing the Metrics
 
