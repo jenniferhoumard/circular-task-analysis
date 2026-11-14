@@ -46,8 +46,8 @@ def load_session(data_file, marker_file):
 
     # 2. Samples: skip the 4 header lines and remove the "0,0,0,0" separator lines
     data = np.loadtxt(data_file, delimiter=",", skiprows=4, dtype=np.int64)
-    n_separators = np.sum(data[:, 0] == 0)
     is_separator = data[:, 0] == 0
+    n_separators = np.sum(is_separator)
     # Number of separator lines written before each sample: 0 for the 1st recording, 1 for the 2nd...
     block = np.cumsum(is_separator)[~is_separator]
     data = data[~is_separator]
@@ -169,6 +169,8 @@ By comparing several selection rules with the marker files, we found a rule that
 
 - **end of a recording:** the `0,0,0,0` separator line written by MouseReMoCo in the raw file. In the new dataset, one sample of recording 3, recorded 1 ms before `DoPause`, is written *after* the separator line: it already belongs to the pause.
 - **start of a recording:** the `DoRecord` event, with a tolerance of 10 ms. This keeps the sample recorded 4 ms before `DoRecord` in recording 0 of the provided dataset (Section 4), and removes the samples of the pauses in the new dataset.
+
+To apply this rule, `load_session()` assigns a **block number** to each sample by counting the separator lines written before it (`np.cumsum`): samples before the first separator belong to block 0, samples between the first and the second separators to block 1, and so on. A block is not exactly a recording: with version 1.3.0, block *i* (for *i* ≥ 1) starts with the samples of the pause that precedes recording *i*, and only then contains the samples of recording *i*. This is why the selection combines two conditions: the sample belongs to block *i* (it was written before the separator that ends recording *i*), **and** it was recorded at most 10 ms before `DoRecord` (it does not belong to the previous pause).
 
 ```{python}
 def get_recordings(session, tolerance_ms=10):
