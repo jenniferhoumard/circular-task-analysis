@@ -4,7 +4,7 @@ To check that our analysis also works on independently collected data, we record
 
 **Participant and equipment.** The recording was performed by one member of the group *(Sarah)*(right-handed), who had never performed the task before and did not do any practice trial. The task was performed on a MacBook Air M4 (13.6-inch screen, native resolution 2560 × 1664 pixels, displayed at 1470 × 956 points), using the built-in **trackpad** with the middle finger of the right (dominant) hand. The trackpad tracking speed was set to its maximum in the macOS settings. The participant was lying on a sofa with the laptop on her lap.
 
-**Software and settings.** We used MouseReMoCo version 1.3.0 (Java 8), launched from the terminal with the same task settings as the provided dataset:
+**Software and settings.** We used MouseReMoCo version 1.3.0 (Java 8), the latest release available on the GitHub repository, as recommended in its documentation; version 1.2.0rc5, used for the provided dataset, is a release candidate that is not available among the published releases. The software was launched from the terminal with the same task settings as the provided dataset:
 
 ```bash
 java -jar mouseReMoCo1.3.0.jar -task circular -cycleMaxNumber 6 -cycleDuration 20 -externalRadius 250 -internalRadius 170
