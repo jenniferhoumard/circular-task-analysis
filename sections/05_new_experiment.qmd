@@ -282,7 +282,7 @@ for i in range(new["n_records"]):
     print(f"{i:>9} | {new['marker_results'][i, 4]:>11.2f} | {metrics_new[i, 4]:>12.2f} | {metrics_section4[i, 4]:>19.2f}")
 ```
 
-The function reproduces Section 4 and MouseReMoCo on the provided dataset, and the 8 metrics of the 6 recordings of the new dataset are identical to those of its marker file: **our analysis is validated on an independent recording**. With the selection of Section 4, only recording 0 is correct (it has no pause before it): for the other recordings, the samples of the previous pause are included, which doubles the movement time per lap (and halves `IPe`). This shows that a method validated on one dataset can fail on another one recorded in different conditions (here, another software version).
+The function reproduces Section 4 and MouseReMoCo on the provided dataset, and the 8 metrics of the 6 recordings of the new dataset are identical to those of its marker file: **our analysis is validated on an independent recording**. With the selection of Section 4, only recording 0 is correct (it has no pause before it): for the other recordings, the samples of the previous pause are included (Section 5.3.1), which doubles the movement time per lap (and halves `IPe`). This shows that a method validated on one dataset can fail on another one recorded in different conditions (here, another software version).
 
 ### Figures and Comparison with the Provided Dataset
 
