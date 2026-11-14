@@ -45,3 +45,15 @@ for name, c in rows:
 **Recording 0 must be interpreted with care.** Its low `IPe` (7.94 bit/s) does not mean that the participant was imprecise during the whole recording. Its large `Te` (91.79 px) comes from one excursion during the first second (Sections 3.1.3 and 3.2): since the first sample is already inside the target, MouseReMoCo's rule (start counting at the first sample inside the target) does not remove it. Without the first second, `Te` would be about 41 px, as in the other recordings, and `IPe` about 17 bit/s. The rest of the difference comes from the slower movement (1.84 s/lap), consistent with a warm-up effect.
 
 **Errors were mostly towards the outside of the circle.** About 85 % of the samples outside the target are beyond the outer limit (r > 233 px), which suggests that the participant tended to overshoot the curve rather than cut it.
+
+### New Dataset
+
+The new recording shows a much lower performance: `IPe` is about half of the provided dataset (7.3 to 11.4 bit/s), laps are slower (from recording 1 onwards), and the error is much higher (6.2 to 27.3 %). Above all, **`Be` is above 1 in all six recordings** (1.11 to 2.03): unlike the participant of the provided dataset, this participant needed more than the available width, so that the error was always above the theoretical 3.88 %.
+
+The evolution across the recordings illustrates the **speed–accuracy trade-off** (@fig-comparison). Recording 0 was the fastest (1.77 s/lap) but also the least accurate (27 % error, `Be` = 2.03). The participant then slowed down (2.6 s/lap in recordings 1 and 2), which reduced the error, and finally moved slightly faster again while keeping a lower error (about 2.2 s/lap and 6 to 8 % in recordings 3 to 5), so that `IPe` increased from about 7 to 11 bit/s. The exits were also less systematically towards the outside than in the provided dataset (57 % of the samples outside the target, instead of 85 %): in recording 0, the participant mostly cut the circle (`Re` = 203.8 px).
+
+### Comparison of the Two Datasets
+
+The two datasets show two different ways of performing the same task: in the provided dataset, the participant kept a safety margin (`Be` < 1) and increased the speed; in the new dataset, the participant first exceeded the available width and then found a compromise by slowing down. In both cases, `IPe` increased after the first recording, which is consistent with a familiarisation with the task.
+
+These differences cannot be attributed to the participants alone. The two datasets differ in several conditions at the same time (Section 5.1): input device (an unknown device vs a trackpad set to its maximum speed), posture, previous experience of the task, screen and software version. This shows that `IPe`, which Fauviaux et al. (2021) propose as a global measure of sensorimotor performance, depends strongly on the recording conditions: to compare people, for example persons with stroke and healthy participants, these conditions must be identical.
