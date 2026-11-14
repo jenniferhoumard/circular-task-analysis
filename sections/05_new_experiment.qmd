@@ -265,8 +265,13 @@ metrics_new = compute_metrics(new, get_recordings(new))
 print("New dataset, identical to MouseReMoCo:     ", compare_with_marker(metrics_new, new["marker_results"]))
 
 t = new["time_ms"]
-recordings_section4 = [np.where((t > (new["record_end_ms"][i - 1] if i > 0 else -np.inf))
-                                & (t <= new["record_end_ms"][i]))[0] for i in range(new["n_records"])]
+recordings_section4 = []
+for i in range(new["n_records"]):
+    # Selection of Section 4: after the end of the previous recording, up to DoPause
+    previous_end = new["record_end_ms"][i - 1] if i > 0 else -np.inf
+    current_end = new["record_end_ms"][i]
+    idx = np.where((t > previous_end) & (t <= current_end))[0]
+    recordings_section4.append(idx)
 metrics_section4 = compute_metrics(new, recordings_section4)
 print("New dataset with the Section 4 selection:  ", compare_with_marker(metrics_section4, new["marker_results"]))
 
