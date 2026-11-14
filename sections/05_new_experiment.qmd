@@ -286,7 +286,7 @@ The function reproduces Section 4 and MouseReMoCo on the provided dataset, and t
 
 ### Figures and Comparison with the Provided Dataset
 
-To draw the figures of Section 3 for the new dataset, we adapted the function `plot_record()` so that it takes the session as an argument and uses its own parameters (centre, screen size, target limits). @fig-new-record-0 and @fig-new-record-5 show the first and the last recordings of the new dataset.
+To create the same figures as in Section 3 for the new dataset, we adapted the function `plot_record()` so that it can work with any dataset: instead of the settings of the provided dataset, it uses the screen dimensions, circle centre and target limits of the selected dataset. @fig-new-record-0 and @fig-new-record-5 show the first and the last recordings of the new dataset.
 
 ```{python}
 def plot_session_record(session, recordings, i, title):
