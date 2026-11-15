@@ -567,7 +567,22 @@ print("MouseReMoCo reference values:")
 print(marker_results)
 ```
 
-In conclusion, the performance metrics calculated using Python matched the values reported by MouseReMoCo for all five recordings. This confirms that the calculations successfully reproduce the software's results for this dataset. Excluding the initial approach to the target was an important step to obtain the same results as MouseReMoCo for Recordings 1–4. However, Recording 0 started inside the target, so no initial samples were excluded, and the early excursion outside the target remained part of the analysis.
+**Comparison with the Assignment's Recomputed Statistics**
+
+Our calculated results match MouseReMoCo's reported values for all eight metrics across the five recordings to two decimal places. However, five values differ by 0.01 from the recomputed statistics provided in the assignment. 
+
+We found that these small differences can be explained by two calculation choices: 
+
+| Calculation choice | MouseReMoCo / Our Section 04 | Assignment's recomputed statistics |
+|---|---|---|
+| Start of Recording 0 | Includes the sample recorded 4 ms before `DoRecord` | Excludes this sample |
+| Standard deviation | Divides by $N-1$ (`ddof=1`) | Divides by $N$ (`ddof=0`) |
+
+Including the additional sample and using ddof=1 reproduces MouseReMoCo's reported values, whereas excluding the sample and using ddof=0 reproduces the assignment's recomputed statistics.
+
+Both approaches are mathematically valid but use slightly different calculation methods. We kept our method because our objective was to reproduce MouseReMoCo's reported results. 
+
+Excluding the initial approach to the target was an important step to obtain the same results as MouseReMoCo for Recordings 1–4. However, Recording 0 started inside the target, so no initial samples were excluded, and the early excursion outside the target remained part of the analysis.
 
 Overall, the results show the importance of considering multiple metrics when evaluating the performance of a circular steering task. Although performance generally increased across recordings, we cannot conclude that this improvement was due to motor learning. It could also reflect familiarization with the task, a change in movement strategy, or normal performance variability. Therefore, more recordings would be needed to determine whether a consistent learning effect occurred. 
 
