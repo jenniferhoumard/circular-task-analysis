@@ -61,7 +61,7 @@ The main branch contains the latest merged version of our work. The commit histo
 
 **Problem 1 — Reproducing MouseReMoCo's statistical results**
 
-**Problem:** In Sections 02 and 03, we selected samples between the `DoRecord` and `DoPause` markers, which excluded a sample recorded 4ms before `DoRecord` in Recording 0. When recalculating the statistics in Section 04, we found that this sample needed to be included to match MouseReMoCo's results. However, by doing this, we noticed that five values differed by 0.01 from the assignment's recomputed statistics. 
+**Problem:** In Sections 02 and 03, we selected samples between the `DoRecord` and `DoPause` markers, which excluded a sample recorded 4ms before `DoRecord` in Recording 0. When recalculating the statistics in Section 04, we found that this sample needed to be included to match MouseReMoCo's results. However, by doing this, we noticed that five values differed by 0.01 from the assignment's "recomputed statistics for all records" table. 
 
 **Solution:** In Section 04, we included the 4 ms sample and used (N-1) (ddof=1) instead of (N) (ddof=0) to calculate the standard deviation. This allowed us to reproduce all eight metrics reported by MouseReMoCo for the five recordings. In contrast, excluding the sample and using (N) reproduced the assignment's recomputed values. Since our objective was to reproduce MouseReMoCo's results, we kept our method. 
 
@@ -69,7 +69,7 @@ The main branch contains the latest merged version of our work. The commit histo
 
 **Problem 2 — Reproducing MouseReMoCo's error percentage**
 
-**Problem:** In Section 04, we initially calculated `error` as the percentage of mouse samples outside the circular track. However, these values did not match those reported by MouseReMoCo because counting samples does not account for how far the cursor moves outside the target. 
+**Problem:** In Section 04, we initially calculated `error` as the percentage of mouse samples outside the circular track. However, these values did not match those reported by MouseReMoCo because counting samples does not account for the proportion of circular movement performed outside the target. 
 
 **Solution:** We compared a sample-based and angle-based method. Using `arctan2` and `np.unwrap`, we calculated the cursor's angular movement around the circle. We found that the angle-based method reproduced MouseReMoCo's results, so we used it for our final calculations. We divided the angular movement performed outside the track by the total angular movement and multiplied by 100. This method calculates `error` as a percentage of the total angular movement performed outside the track, rather than the percentage of samples outside the track.
 
@@ -79,4 +79,4 @@ The main branch contains the latest merged version of our work. The commit histo
 
 **Problem:** The provided dataset was recorded using MouseReMoCo version 1.2.0rc5, which did not save mouse samples during pauses. However, the new experiment in Section 05 used version 1.3.0, which saves samples during pauses. Consequently, applying the selection method from Section 04 to the new dataset incorrectly included pause samples, affecting movement time and performance metrics. 
 
-**Solution:** In Section 05, we developed a more general method using the `0,0,0,0` seperator lines in the raw file to identify where each recording ends. We also allowed samples recorded up to 10 ms before `DoRecord` to be included, since Section 04 showed that MouseReMoCo included a sample recorded 4 ms before this marker. We chose 10 ms as a small tolerance that worked for both datasets, allowing us to include such samples automatically while excluding earlier pause samples. Using this method and the same statistical formulas, we reproduced all eight MouseReMoCo metrics for 11 completed recordings (5 from the provided dataset and 6 from our new experiment).
+**Solution:** In Section 05, we developed a more general method using the `0,0,0,0` separator lines in the raw file to identify where each recording ends. We also allowed samples recorded up to 10 ms before `DoRecord` to be included, since Section 04 showed that MouseReMoCo included a sample recorded 4 ms before this marker. We chose 10 ms as a small tolerance that worked for both datasets, allowing us to include such samples automatically while excluding earlier pause samples. Using this method and the same statistical formulas, we automatically compared all eight calculated metrics with MouseReMoCo marker files, confirming that they matched to two decimal places for all11 completed recordings (5 from the provided dataset and 6 from our new experiment).
