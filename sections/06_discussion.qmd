@@ -1,9 +1,76 @@
 
 ## Interpretation of Results
-xx
+
+### Validation of the Analysis
+
+The first aim of this project was to reproduce the analysis of MouseReMoCo with our own code. The figures of the assignment (Mottet, 2025) were reproduced from the raw data (Section 3), and the 8 metrics of the marker table were recomputed for the provided dataset (Section 4) and for a new recording made with a more recent version of the software (Section 5). For the **11 recordings** of the two datasets, all the metrics are identical to the values of MouseReMoCo to two decimals.
+
+This validation was not only a final check: the differences found along the way helped us understand how the software works. A difference of 0.01 in recording 0 revealed that MouseReMoCo keeps a sample recorded 4 ms before `DoRecord` (Section 4); the comparison of the error with two methods showed that MouseReMoCo uses the angle travelled outside the target, not the number of samples (Section 4); and the new dataset showed that a selection rule that is correct for one version of the software can fail with another one (@tbl-selection-rules). Selecting all the samples recorded after the end of the previous recording, up to `DoPause` (Section 4), works with version 1.2.0rc5, but version 1.3.0 also saves the samples of the pauses, so this rule adds about 20 s of pause to each recording. The rule of Section 5 (the samples written before the separator line that ends the recording, from 10 ms before `DoRecord`) works for both versions.
+
+The table below summarises the metrics of the two datasets, with the theoretical values given by MouseReMoCo.
+
+```{python}
+#| label: tbl-datasets
+#| tbl-cap: "Range (minimum–maximum over the recordings) of the main metrics of each dataset, and theoretical values of the marker table."
+#| output: asis
+
+# Columns of the marker table: nLaps, Re, Te, error, MT/lap, IDe/lap, Be, IPe
+rows = [("MT/lap (s/lap)", 4), ("error (%)", 3), ("Te (px)", 2), ("Be", 6), ("IPe (bit/s)", 7)]
+
+
+def value_range(values):
+    """'minimum–maximum' of a metric over the recordings, with 2 decimals."""
+    return f"{values.min():.2f}–{values.max():.2f}"
+
+
+def theory(c):
+    """Theoretical value of the marker table ('–' when there is none)."""
+    return "–" if np.isnan(marker_theory[c]) else f"{marker_theory[c]:.2f}"
+
+
+print("| Metric | Theory | Provided dataset (5 recordings) | New dataset (6 recordings) |")
+print("|---|:---:|:---:|:---:|")
+for name, c in rows:
+    print(f"| {name} | {theory(c)} | {value_range(metrics_provided[:, c])} | {value_range(metrics_new[:, c])} |")
+```
+
+### Provided Dataset
+
+**The task was performed as instructed.** In every recording, the average radius of the cursor (`Re`) is between 209.4 and 213.9 px, close to the ideal radius of 209.5 px. An average alone does not show that the cursor stayed close to the path, since a cursor moving far inside and outside the circle could have the same average radius: this is shown by the dispersion of the radius, with `Be` below 1 from recording 1 onwards (see below). The number of laps is negative in all recordings because the participant turned clockwise (Section 3.1.3).
+
+**Speed increased across the recordings.** The time per lap decreased from 1.84 s in recording 0 to 1.30 s in recording 4 (about 30 % faster), i.e. from about 11 to almost 15 laps in 20 s, with only one exception (recording 3, slightly slower than recording 2).
+
+**The participant was more precise than required.** From recording 1 onwards, `Be` is below 1 (0.73 to 0.93) and the error is below the theoretical value of 3.88 % (0.13 to 2.84 %). The theoretical values correspond to a movement whose effective tolerance `Te` is exactly equal to the width available for the cursor centre (`taskTolerance` = 47 px): with $T_e = \sqrt{2\pi e} \times SD(r) \approx 4.13\,SD(r)$, about 3.88 % of a normal distribution falls outside this width (effective width, Soukoreff & MacKenzie, 2004). The participant therefore used less than the available width, and could probably have moved faster for the same width. Since speed increased while `Te` stayed between 34 and 44 px, `IPe` reached 21 to 24 bit/s from recording 1 onwards.
+
+**Recording 0 must be interpreted with care.** Its low `IPe` (7.94 bit/s) does not mean that the participant was imprecise during the whole recording. Its large `Te` (91.79 px) comes from one excursion during the first second (Sections 3.1.3 and 3.2): since the first sample is already inside the target, MouseReMoCo's rule (start counting at the first sample inside the target) does not remove it. Without the first second, `Te` would be about 41 px, as in the other recordings, and `IPe` about 17 bit/s. The rest of the difference comes from the slower movement (1.84 s/lap), consistent with a warm-up effect.
+
+**Errors were mostly towards the outside of the circle.** About 85 % of the samples outside the target used for the metrics (from the first entry into the target) are beyond the outer limit (r > 233 px), and 91 % when all the samples of the recordings are included. This suggests that the participant tended to overshoot the curve rather than cut it.
+
+### New Dataset
+
+The new recording shows a much lower performance: `IPe` is about half of the provided dataset (7.3 to 11.4 bit/s), laps are slower (from recording 1 onwards), and the error is much higher (6.2 to 27.3 %). Above all, **`Be` is above 1 in all six recordings** (1.11 to 2.03): unlike the participant of the provided dataset, this participant needed more than the available width, so that the error was always above the theoretical 3.88 %.
+
+The evolution across the recordings illustrates the **speed–accuracy trade-off** (@fig-comparison). Recording 0 was the fastest (1.77 s/lap) but also the least accurate (27 % error, `Be` = 2.03). The participant then slowed down (2.6 s/lap in recordings 1 and 2), which reduced the error, and finally moved slightly faster again while keeping a lower error (about 2.2 s/lap and 6 to 8 % in recordings 3 to 5), so that `IPe` increased from about 7 to 11 bit/s. The exits were also less systematically towards the outside than in the provided dataset (57 % of the samples outside the target used for the metrics, and 55 % of all the samples, instead of 85 % and 91 %): in recording 0, the participant mostly cut the circle, and its average radius (`Re` = 203.8 px) was smaller than the ideal radius of 209.5 px.
+
+### Comparison of the Two Datasets
+
+The two datasets show two different ways of performing the same task: in the provided dataset, the participant kept a safety margin (`Be` < 1) and increased the speed; in the new dataset, the participant exceeded the available width in all the recordings (`Be` > 1), and reduced this excess by slowing down. In the provided dataset, `IPe` increased from recording 1 onwards; in the new dataset, it first decreased slightly (from 7.59 to 7.27 bit/s) and only increased from recording 3 (11.06 bit/s), after the participant slowed down. In both cases, this evolution is consistent with a familiarisation with the task.
+
+These differences cannot be attributed to the participants alone. The two datasets differ in several conditions at the same time (Section 5.1): input device (an unknown device vs a trackpad set to its maximum speed), posture, previous experience of the task, screen and software version. This shows that `IPe`, which Fauviaux et al. (2021) propose as a global measure of sensorimotor performance, depends strongly on the recording conditions: to compare people, for example persons with stroke and healthy participants, these conditions must be identical.
 
 ## Methodological Limitations
-xx
+
+- **One participant and one session per dataset.** Each dataset contains a single session of 5 or 6 recordings of 20 s. No statistical inference is possible: the increase in performance across the recordings could reflect learning, familiarisation, attention or chance, and the differences between the datasets cannot be separated from the differences in conditions.
+- **Start of the recordings.** MouseReMoCo starts counting at the first sample inside the target. This removes the approach phase when the cursor starts outside the track, but not an excursion just after a start inside the track (recording 0 of the provided dataset), and the result depends on where the cursor was left during the pause. Ignoring a fixed duration or the first lap of each recording would be more robust, but our results would then differ from those of the software.
+- **Selection of the samples.** The rule that reproduces MouseReMoCo for both datasets (Section 5.3.1) was found by comparing several rules with the marker files, not from the documentation of the software, and its 10 ms tolerance is empirical. It was validated on two sessions recorded with two versions of the software, and should be checked again with other versions.
+- **Sampling.** MouseReMoCo does not record at a fixed rate: about 199 Hz with irregular intervals in the provided dataset, and about 120 Hz with mostly regular 8 ms intervals in the new one (Sections 2.3 and 5.2). The standard deviation of `r`, and therefore `Te`, is computed per sample, so the parts of the movement with more samples weigh more. Resampling the data at a constant rate, or weighting the samples by their duration, would avoid this bias and make datasets recorded with different devices more comparable.
+- **Measures in pixels.** All distances are in screen pixels, while the size of a pixel and the cursor gain depend on the screen, the input device and the settings of the operating system. On the screen of the new recording, the band available to the cursor centre is about 9.3 mm wide (Section 5.1), but the physical size of the track in the provided dataset is unknown.
+- **Definition of the error.** The `error` of MouseReMoCo is based on the angle travelled outside the target, not on the time or the number of samples outside it (Section 4). Both definitions are valid but give different values, so the definition must be stated whenever errors are compared.
 
 ## Conclusion
-xx
+
+Using only NumPy and Matplotlib, we imported and explored the data of a circular steering task recorded with MouseReMoCo, reproduced the figures of the assignment, and recomputed the 8 metrics of the software. Our results are identical to those of MouseReMoCo for the 11 recordings of the provided dataset and of a new recording, which validates both our understanding of the data and our code. The main difficulties were not in the coding itself, but in understanding exactly which samples the software analyses: the sample recorded just before the start of a recording, the angle-based error, and the samples saved during the pauses by the most recent version.
+
+In the provided dataset, the participant became about 30 % faster while staying more precise than required, and reached an `IPe` of 21 to 24 bit/s. In the new recording, made with a trackpad by a participant discovering the task, the performance was about half as high and illustrated the speed–accuracy trade-off. The analysis also showed that the summary metrics must be read together with the raw data: the low performance of the first recording of the provided dataset is largely due to a single excursion at its start.
+
+Before using these measures to compare people, as in Fauviaux et al. (2021), the recording conditions (input device, screen, posture, software version) would need to be standardised, the start of the recordings and the irregular sampling handled more carefully, and several sessions recorded for each participant.
