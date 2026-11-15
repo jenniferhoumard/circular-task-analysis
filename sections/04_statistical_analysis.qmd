@@ -191,7 +191,7 @@ where:
 - ($T_e$) = Effective Tolerance (px).
 - ($e$) = Euler's number, approximately 2.71828.
 
-The factor $\sqrt{2\pi e} \approx 4.133$ converts the standard deviation into an effective width around the average radius.
+The factor $\sqrt{2\pi e} \approx 4.133$ converts the standard deviation into an effective width around the average radius, following the effective-width approach described by Soukoreff and MacKenzie (2004). 
 
 Assuming the radial distances follow a normal distribution, approximately 96% of the values fall within this width and about 4% fall outside it. This explains the theoretical error of approximately 3.88% reported by MouseReMoCo.
 
@@ -364,7 +364,7 @@ The participant generally became faster across recordings, with Recording 3 bein
 
 ### Effective Index of Difficulty per Lap (`IDe/lap`)
 
-The effective index of difficulty per lap (`IDe/lap`) measures how difficult the circular movement was, based on the participant's actual cursor path. 
+The effective index of difficulty per lap (`IDe/lap`) measures how difficult the circular movement was, based on the participant's actual cursor path. This calculation is based on the Steering Law introduced by Accot and Zhai (1997), which explains how movement difficulty depends on the distance travelled and the width of the path the cursor must follow. Where distance travelled refers to the circumference of the circular path ($2\pi R_e$) and the width of the path refers to the effective tolerance ($T_e$).
 
 The difficulty depends on:
 
