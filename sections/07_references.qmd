@@ -1,4 +1,17 @@
 
+- Accot, J., & Zhai, S. (1997). Beyond Fitts' law: models for trajectory-based HCI tasks. *Proceedings of the ACM SIGCHI Conference on Human Factors in Computing Systems (CHI '97)*, 295–302.
+
 - Fauviaux, T., Muller, C., Faity, G., et al. (2021). *Can a circular steering task quantify sensorimotor integration in persons with stroke?* https://hal.science/hal-03834500
 
+- Harris, C. R., Millman, K. J., van der Walt, S. J., et al. (2020). Array programming with NumPy. *Nature*, 585, 357–362. https://doi.org/10.1038/s41586-020-2649-2
+
+- Hunter, J. D. (2007). Matplotlib: A 2D graphics environment. *Computing in Science & Engineering*, 9(3), 90–95. https://doi.org/10.1109/MCSE.2007.55
+
 - Mottet, D. *MouseReMoCo.* https://github.com/DenisMot/MouseReMoCo
+
+- Mottet, D. (2023). *MouseReMoCo v1.3.0 release notes.* https://github.com/DenisMot/mouseReMoCo/releases/tag/v1.3.0-release
+
+- Mottet, D. (2025). *Circular task analysis* [course assignment]. Python for HMS, IEAP Master, University of Montpellier.
+
+- Soukoreff, R. W., & MacKenzie, I. S. (2004). Towards a standard for pointing device evaluation, perspectives on 27 years of Fitts' law research in HCI. *International Journal of Human-Computer Studies*, 61(6), 751–789.
+
